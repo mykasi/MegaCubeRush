@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survivor Action 3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* 【追加】ネオンフリッカーアニメーション */
+        @keyframes neon-flicker {
+          0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+            opacity: 1;
+            filter: drop-shadow(0 0 15px rgba(167,139,250,0.8)) drop-shadow(0 0 30px rgba(167,139,250,0.5));
+          }
+          20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+            opacity: 0.8;
+            filter: drop-shadow(0 0 5px rgba(167,139,250,0.4)) drop-shadow(0 0 10px rgba(167,139,250,0.2));
+          }
+        }
+        .neon-flicker {
+          animation: neon-flicker 3s linear infinite;
+        }
+
+        /* 【追加】ワイヤーフレームキューブ回転アニメーション (継ぎ目解消版) */
+        @keyframes rotateCube {
+          from { transform: rotateX(-30deg) rotateY(0deg); }
+          to { transform: rotateX(-30deg) rotateY(360deg); }
+        }
+        .rotating-wireframe-cube {
+          transform-style: preserve-3d;
+          animation: rotateCube 20s linear infinite;
+        }
+        .cube-face {
+          position: absolute;
+          inset: 0;
+          box-sizing: border-box;
+          /* borderの代わりにinset shadowを使うことで角の継ぎ目をなくす */
+          box-shadow: inset 0 0 0 2px #a78bfa, inset 0 0 15px rgba(167,139,250,0.3);
+          background: rgba(167,139,250, 0.05);
+        }
+
+        @font-face {
+          font-family: 'GenEiLateMin';
+          src: url('/fonts/GenEiLateMinP_v2.ttf');
+        }
+    </style>
+    <script type="module" crossorigin src="/assets/index-SDTRXh2H.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BVhEnEEe.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
