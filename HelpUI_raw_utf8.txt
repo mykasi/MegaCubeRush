@@ -1,0 +1,1450 @@
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useGamepad } from '../hooks/useGamepad';
+import { playSound } from '../game/soundBus';
+import { RARITY_CONFIG, PREFIX_POOL, SUFFIX_POOL, BASE_ITEMS } from '../game/items/itemData';
+import { Rarity, EquipSlot, StatType } from '../game/items/itemTypes';
+import { getItemIcon, getItemCategoryInfo } from './InventoryUI';
+
+interface HelpUIProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isGamepad?: boolean;
+}
+
+/** StatType 縺ｮ譌･譛ｬ隱槭Λ繝吶Ν */
+const STAT_LABELS: Record<string, string> = {
+  MeleeAttack: '霑第磁謾ｻ謦・鴨',
+  RangedAttack: '驕髫疲判謦・鴨',
+  Defense: '髦ｲ蠕｡蜉・,
+  Health: '譛螟ｧHP',
+  Speed: '遘ｻ蜍暮溷ｺｦ',
+  CritChance: '莨壼ｿ・紫',
+  CritDamage: '莨壼ｿ・ム繝｡繝ｼ繧ｸ',
+  FireDamage: '轣ｫ轤弱ム繝｡繝ｼ繧ｸ',
+  IceDamage: '豌ｷ邨舌ム繝｡繝ｼ繧ｸ',
+  LightningDamage: '髮ｷ謦・ム繝｡繝ｼ繧ｸ',
+  LifeSteal: '蜷ｸ陦',
+  PickupRange: '蜿門ｾ礼ｯ・峇',
+  HpRegen: '閾ｪ辟ｶ蝗槫ｾｩ騾溷ｺｦ',
+  MagicPower: '鬲泌鴨',
+  Evasion: '繝代Μ繧｣逋ｺ逕溽紫',
+};
+
+// getItemEmoji 縺ｯ蜑企勁縺励！nventoryUI 縺ｮ getItemIcon 繧剃ｽｿ逕ｨ縺励∪縺・
+const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
+  const [activeTab, setActiveTab] = useState<'controls' | 'systems' | 'items' | 'elements'>('controls');
+  const { poll } = useGamepad();
+  const lastLB = useRef(false);
+  const lastRB = useRef(false);
+  const lastLT = useRef(false);
+  const lastRT = useRef(false);
+  const lastB = useRef(false);
+  const lastDUp = useRef(false);
+  const lastDDown = useRef(false);
+  const lastDLeft = useRef(false);
+  const lastDRight = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [controlSubTab, setControlSubTab] = useState<'game' | 'menu'>('game');
+  const [elementSubTab, setElementSubTab] = useState<'enchant' | 'status'>('enchant');
+  const [systemSubTab, setSystemSubTab] = useState<'core' | 'battle' | 'stats' | 'hud'>('core');
+  const [itemSubTab, setItemSubTab] = useState<'drops' | 'resources' | 'rarity' | 'affixes' | 'equip'>('drops');
+
+  const switchTab = useCallback((dir: number) => {
+    setActiveTab(prev => {
+      const tabs: Array<'controls' | 'systems' | 'items' | 'elements'> = ['controls', 'systems', 'items', 'elements'];
+      const currentIdx = tabs.indexOf(prev);
+      const nextIdx = (currentIdx + dir + tabs.length) % tabs.length;
+      return tabs[nextIdx];
+    });
+    playSound('ui_tab_large');
+  }, []);
+
+  const switchSubTab = useCallback((dir: number) => {
+    if (activeTab === 'controls') {
+      setControlSubTab(prev => (prev === 'game' ? 'menu' : 'game'));
+    } else if (activeTab === 'elements') {
+      setElementSubTab(prev => (prev === 'enchant' ? 'status' : 'enchant'));
+    } else if (activeTab === 'systems') {
+      setSystemSubTab(prev => {
+        const subTabs: Array<'core' | 'battle' | 'stats' | 'hud'> = ['core', 'battle', 'stats', 'hud'];
+        const currentIdx = subTabs.indexOf(prev);
+        const nextIdx = (currentIdx + dir + subTabs.length) % subTabs.length;
+        return subTabs[nextIdx];
+      });
+    } else if (activeTab === 'items') {
+      setItemSubTab(prev => {
+        const subTabs: Array<'drops' | 'resources' | 'rarity' | 'affixes' | 'equip'> = ['drops', 'resources', 'rarity', 'affixes', 'equip'];
+        const currentIdx = subTabs.indexOf(prev);
+        const nextIdx = (currentIdx + dir + subTabs.length) % subTabs.length;
+        return subTabs[nextIdx];
+      });
+    }
+    playSound('ui_tab_large');
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let frameId: number;
+    const loop = () => {
+      const { mainDevice } = poll();
+      if (mainDevice) {
+        const lb = mainDevice.buttons[4] > 0.5;
+        const rb = mainDevice.buttons[5] > 0.5;
+        const lt = mainDevice.buttons[6] > 0.5;
+        const rt = mainDevice.buttons[7] > 0.5;
+        const bBtn = mainDevice.buttons[1] > 0.5;
+        const dLeft = mainDevice.buttons[14] > 0.5;
+        const dRight = mainDevice.buttons[15] > 0.5;
+
+        // B繝懊ち繝ｳ縺ｧ髢峨§繧・        if (bBtn && !lastB.current) onClose();
+
+        if (lb && !lastLB.current) switchTab(-1);
+        if (rb && !lastRB.current) switchTab(1);
+
+        if (activeTab === 'controls' || activeTab === 'elements' || activeTab === 'systems' || activeTab === 'items') {
+          if (lt && !lastLT.current) switchSubTab(-1);
+          if (rt && !lastRT.current) switchSubTab(1);
+          if (dLeft && !lastDLeft.current) switchSubTab(-1);
+          if (dRight && !lastDRight.current) switchSubTab(1);
+        }
+
+        lastLB.current = lb;
+        lastRB.current = rb;
+        lastLT.current = lt;
+        lastRT.current = rt;
+        lastB.current = bBtn;
+        lastDLeft.current = dLeft;
+        lastDRight.current = dRight;
+
+        // 蜿ｳ繧ｹ繝・ぅ繝・け縺ｧ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ
+        const rsY = mainDevice.axes[3];
+        if (Math.abs(rsY) > 0.2) {
+          contentRef.current?.scrollBy({ top: rsY * 15 });
+        }
+      }
+      frameId = requestAnimationFrame(loop);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (key === 'q') switchTab(-1);
+      if (key === 'e') switchTab(1);
+      if (activeTab === 'controls' || activeTab === 'elements' || activeTab === 'systems' || activeTab === 'items') {
+        if (key === 'z' || e.key === 'ArrowLeft') switchSubTab(-1);
+        if (key === 'c' || e.key === 'ArrowRight') switchSubTab(1);
+      }
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        onClose();
+        e.preventDefault();
+      }
+      if (e.key === 'PageUp') {
+        contentRef.current?.scrollBy({ top: -200, behavior: 'smooth' });
+        e.preventDefault();
+      }
+      if (e.key === 'PageDown') {
+        contentRef.current?.scrollBy({ top: 200, behavior: 'smooth' });
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    frameId = requestAnimationFrame(loop);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      cancelAnimationFrame(frameId);
+    };
+  }, [isOpen, poll, switchTab, switchSubTab]);
+
+  if (!isOpen) return null;
+
+  const renderControls = () => (
+    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* 繧ｵ繝悶ち繝剖I */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button
+          onClick={() => { setControlSubTab('game'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${controlSubTab === 'game' ? '#00e5ff' : '#444'}`,
+            background: controlSubTab === 'game' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: controlSubTab === 'game' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: "'GenEiLateMin', serif"
+          }}
+        >
+          併・・繧ｲ繝ｼ繝
+        </button>
+        <button
+          onClick={() => { setControlSubTab('menu'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${controlSubTab === 'menu' ? '#ffeb3b' : '#444'}`,
+            background: controlSubTab === 'menu' ? 'rgba(255, 235, 59, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: controlSubTab === 'menu' ? '#ffeb3b' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: "'GenEiLateMin', serif"
+          }}
+        >
+          搭 繝｡繝九Η繝ｼ
+        </button>
+      </div>
+
+      {controlSubTab === 'game' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            {/* 繧ｭ繝ｼ繝懊・繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｭ繝ｼ繝懊・繝・/h3>
+              <div className="help-row"><span>遘ｻ蜍・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>W</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>A</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>S</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>D</kbd></div></div>
+              <div className="help-row"><span>謾ｻ謦・繧ｨ繧､繝)</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd></div></div>
+              <div className="help-row"><span>蝗樣∩</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Space</kbd></div>
+              <div className="help-row"><span>繝舌Μ繧｢(繧ｬ繝ｼ繝・</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Shift</kbd></div>
+              <div className="help-row"><span>繝悶・繧ｹ繝・/span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>E</kbd></div>
+              <div className="help-row"><span>螻樊ｧ繧ｨ繝ｳ繝√Ε繝ｳ繝・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>1</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>2</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>3</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>4</kbd></div></div>
+              <div className="help-row"><span>繝偵・繝ｫ</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Q</kbd></div>
+              <div className="help-row"><span>繝槭げ繝阪ャ繝・/span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>F</kbd></div>
+              <div className="help-row"><span>繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>R</kbd></div>
+              <div className="help-row"><span>繧､繝ｳ繝吶Φ繝医Μ</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Tab</kbd></div>
+              <div className="help-row"><span>繝昴・繧ｺ</span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Esc</kbd></div>
+            </div>
+
+            {/* 繧ｲ繝ｼ繝繝代ャ繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #a78bfa', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｲ繝ｼ繝繝代ャ繝・/h3>
+              <div className="help-row"><span>遘ｻ蜍・/span><span className="gp-btn gp-btn-ls" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>LS</span></div>
+              <div className="help-row"><span>謾ｻ謦・繧ｨ繧､繝)</span><span className="gp-btn gp-btn-rs" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>RS</span></div>
+              <div className="help-row"><span>蝗樣∩</span><span className="gp-btn gp-btn-a" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>A</span></div>
+              <div className="help-row"><span>繝舌Μ繧｢(繧ｬ繝ｼ繝・</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RB</span></div>
+              <div className="help-row"><span>繝悶・繧ｹ繝・/span><span className="gp-btn gp-btn-x" style={{ width: '24px', height: '24px', fontSize: '14px' }}>X</span></div>
+              <div className="help-row"><span>螻樊ｧ繧ｨ繝ｳ繝√Ε繝ｳ繝・/span><div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fff' }}><span style={{ fontSize: '24px', lineHeight: 1, width: '24px', textAlign: 'center' }}>笨・/span></div></div>
+              <div className="help-row"><span>繝偵・繝ｫ</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LB</span></div>
+              <div className="help-row"><span>繝槭げ繝阪ャ繝・/span><span className="gp-btn gp-btn-b" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>B</span></div>
+              <div className="help-row"><span>繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RT</span></div>
+              <div className="help-row"><span>繧､繝ｳ繝吶Φ繝医Μ</span><span className="gp-btn gp-btn-y" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>Y</span></div>
+              <div className="help-row"><span>繝昴・繧ｺ</span><div style={{ display: 'flex', gap: '8px' }}><span className="gp-btn gp-btn-start" style={{ width: '24px', height: '24px', fontSize: '12px', fontFamily: 'GenEiLateMin, serif' }}>笘ｰ</span></div></div>
+            </div>
+          </div>
+
+          {/* 繝槭え繧ｹ */}
+          <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h3 style={{ color: '#39ff14', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #39ff14', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>務・・繝槭え繧ｹ</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <div className="help-row"><span>繧ｨ繧､繝・域婿蜷題ｻ｢謠幢ｼ・/span><span style={{ color: '#aaa', fontSize: '13px' }}>繧ｫ繝ｼ繧ｽ繝ｫ遘ｻ蜍・/span></div>
+                <div className="help-row"><span>蝗樣∩</span><span style={{ color: '#aaa', fontSize: '13px' }}>蟾ｦ繧ｯ繝ｪ繝・け</span></div>
+                <div className="help-row"><span>繝舌Μ繧｢(繧ｬ繝ｼ繝・</span><span style={{ color: '#aaa', fontSize: '13px' }}>蜿ｳ繧ｯ繝ｪ繝・け</span></div>
+              </div>
+              <div>
+                <div className="help-row"><span>繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span><span style={{ color: '#aaa', fontSize: '13px' }}>荳ｭ繧ｯ繝ｪ繝・け</span></div>
+                <div className="help-row"><span>繝偵・繝ｫ</span><span style={{ color: '#aaa', fontSize: '13px' }}>繧ｵ繧､繝峨・繧ｿ繝ｳ1</span></div>
+                <div className="help-row"><span>繝槭げ繝阪ャ繝・/span><span style={{ color: '#aaa', fontSize: '13px' }}>繧ｵ繧､繝峨・繧ｿ繝ｳ2</span></div>
+              </div>
+            </div>
+            <p style={{ fontSize: '12px', color: '#666', margin: '12px 0 0 0', lineHeight: '1.4' }}>
+              窶ｻ 遏｢蜊ｰ繧ｭ繝ｼ縺ｾ縺溘・蜿ｳ繧ｹ繝・ぅ繝・け縺ｮ蜈･蜉帑ｸ            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <h4 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '14px' }}>繝｢繝ｼ繝峨・蛻・ｊ譖ｿ縺・/h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="help-row" style={{ padding: '4px 0' }}><span>繧ｭ繝ｼ繝懊・繝・/span><kbd className="gp-kbd" style={{ fontSize: '13px', padding: '2px 10px' }}>Ctrl</kbd></div>
+                  <div className="help-row" style={{ padding: '4px 0' }}><span>繧ｲ繝ｼ繝繝代ャ繝・/span><span className="gp-btn gp-btn-rs" style={{ width: '22px', height: '22px', fontSize: '12px' }}>R3</span></div>
+                </div>
+              </div>
+              <div>
+                <h4 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '14px' }}>迚ｹ谿翫↑謫堺ｽ・/h4>
+                <p style={{ fontSize: '13px', color: '#aaa', margin: 0, lineHeight: '1.5' }}>
+                  繝ｻON縺ｮ髢薙・繧､繝ｳ繝吶Φ繝医Μ縺ｮ繧ｫ繝ｼ繧ｽ繝ｫ遘ｻ蜍輔ｒ<strong style={{ color: '#00e5ff' }}>蜿ｳ繧ｹ繝・ぅ繝・け</strong>縺ｧ繧り｡後∴縺ｾ縺吶・br />
+                  繝ｻON縺ｮ迥ｶ諷九〒繧ゅ∝承繧ｹ繝・ぅ繝・け・医∪縺溘・遏｢蜊ｰ繧ｭ繝ｼ・峨ｒ謫堺ｽ懊＠縺溷ｴ蜷医・縺昴■繧峨∈縺ｮ繧ｨ繧､繝縺悟━蜈医＆繧後∪縺吶・                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {controlSubTab === 'menu' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            {/* 繧ｭ繝ｼ繝懊・繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｭ繝ｼ繝懊・繝・/h3>
+              <div className="help-row"><span>驕ｸ謚・/span><div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}><span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd></span></div></div>
+              <div className="help-row"><span>豎ｺ螳・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Space</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Enter</kbd></div></div>
+              <div className="help-row"><span>繧ｭ繝｣繝ｳ繧ｻ繝ｫ</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Esc</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>BackSpace</kbd></div></div>
+              <div className="help-row"><span>繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Q</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>E</kbd></div></div>
+              <div className="help-row"><span>繧ｵ繝悶ち繝門・繧頑崛縺・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Z</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>C</kbd></div></div>
+            </div>
+
+            {/* 繧ｲ繝ｼ繝繝代ャ繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #a78bfa', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｲ繝ｼ繝繝代ャ繝・/h3>
+              <div className="help-row"><span>驕ｸ謚・/span><div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fff' }}><span style={{ fontSize: '24px', lineHeight: 1, width: '24px', textAlign: 'center' }}>笨・/span></div></div>
+              <div className="help-row"><span>豎ｺ螳・/span><span className="gp-btn gp-btn-a" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>A</span></div>
+              <div className="help-row"><span>繧ｭ繝｣繝ｳ繧ｻ繝ｫ</span><span className="gp-btn gp-btn-b" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>B</span></div>
+              <div className="help-row"><span>繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LB</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RB</span></div></div>
+              <div className="help-row"><span>繧ｵ繝悶ち繝門・繧頑崛縺・/span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LT</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RT</span></div></div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
+  const renderSystems = () => (
+    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* 繧ｵ繝悶ち繝剖I */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button
+          onClick={() => { setSystemSubTab('core'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'core' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'core' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'core' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          笞呻ｸ・繧ｳ繧｢繝ｻ繧ｷ繧ｹ繝・Β
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('battle'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'battle' ? '#bf7fff' : '#444'}`,
+            background: systemSubTab === 'battle' ? 'rgba(191, 127, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'battle' ? '#bf7fff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          笞費ｸ・繝舌ヨ繝ｫ
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('stats'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'stats' ? '#ffd700' : '#444'}`,
+            background: systemSubTab === 'stats' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'stats' ? '#ffd700' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          投 繧ｹ繝・・繧ｿ繧ｹ
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('hud'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'hud' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'hud' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'hud' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          導 HUD讒区・
+        </button>
+      </div>
+
+      {systemSubTab === 'core' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 繧｢繧ｯ繧ｷ繝ｧ繝ｳ隗｣隱ｬ */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#ff6b6b', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #ff6b6b', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>笞費ｸ・繧｢繧ｯ繧ｷ繝ｧ繝ｳ隗｣隱ｬ</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* 蝗樣∩ */}
+                <div style={{ background: 'rgba(0,229,255,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #00e5ff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>暢</span>
+                    <span style={{ color: '#00e5ff', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>蝗樣∩・医ム繝・す繝･・・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    <strong style={{ color: '#ffeb3b' }}>SP繧・5豸郁ｲｻ</strong>縺励※遘ｻ蜍墓婿蜷托ｼ亥・蜉帙′辟｡縺・ｴ蜷医・蜷代＞縺ｦ縺・ｋ譁ｹ蜷托ｼ峨∈邏譌ｩ縺上ム繝・す繝･縺励∪縺吶・                    <strong style={{ color: '#00e5ff' }}>蜍穂ｽ應ｸｭ(0.25遘帝俣)縺ｯ螳悟・辟｡謨ｵ</strong>縺ｫ縺ｪ繧翫∫┌謨ｵ荳ｭ縺ｫ謨ｵ繧・ｼｾ荳ｸ繧偵☆繧頑栢縺代ｋ縺薙→縺ｧ縲・strong style={{ color: '#bf7fff' }}>AR繧ｲ繝ｼ繧ｸ繧貞ｰ鷹㍼繝√Ε繝ｼ繧ｸ</strong>縺ｧ縺阪∪縺吶・                    <br />
+                    <span style={{ color: '#7fbfff' }}>笳・繧ｸ繝｣繧ｹ繝亥屓驕ｿ・・/span>謨ｵ繧・雰蠑ｾ繧偵ぐ繝ｪ繧ｮ繝ｪ縺ｾ縺ｧ蠑輔″莉倥￠縺溽憾諷九〒蝗樣∩縺吶ｋ縺ｨ縲栗-frame dodge!縲阪→陦ｨ遉ｺ縺輔ｌ逋ｺ蜍輔・                    <strong style={{ color: '#bf7fff' }}>AR繧ｲ繝ｼ繧ｸ繧貞､ｧ縺阪￥繝√Ε繝ｼ繧ｸ</strong>縺励∝捉蝗ｲ縺ｫ繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･縺檎匱逕溘＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝舌Μ繧｢ */}
+                <div style={{ background: 'rgba(167,139,250,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #a78bfa' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>孱・・/span>
+                    <span style={{ color: '#a78bfa', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝舌Μ繧｢・医ぎ繝ｼ繝会ｼ・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝医げ繝ｫ蠑上・髦ｲ蠕｡蟋ｿ蜍｢縺ｧ縺吶らｶｭ謖∽ｸｭ縺ｯSP繧堤ｶ咏ｶ壽ｶ郁ｲｻ縺励∵雰蠑ｾ繧貞女縺代ｋ縺ｨ豸郁ｲｻ縺悟｢怜刈縺励∪縺吶′縲∝酔譎ゅ↓<strong style={{ color: '#7fbfff' }}>OB繧ｲ繝ｼ繧ｸ繧偵メ繝｣繝ｼ繧ｸ</strong>縺ｧ縺阪∪縺吶・                    SP縺悟ｰｽ縺阪ｋ縺ｨ閾ｪ蜍慕噪縺ｫ隗｣髯､縺輔ｌ縲∬ｧ｣髯､蠕後↓<strong style={{ color: '#ffeb3b' }}>1遘帝俣縺ｮ繧ｯ繝ｼ繝ｫ繧ｿ繧､繝</strong>縺檎匱逕溘＠縺ｾ縺吶・                    <br />
+                    <span style={{ color: '#7fbfff' }}>笳・繧ｸ繝｣繧ｹ繝医ぎ繝ｼ繝会ｼ・/span>謨ｵ繧・雰蠑ｾ繧偵ぐ繝ｪ繧ｮ繝ｪ縺ｾ縺ｧ蠑輔″莉倥￠縺溽憾諷九〒繝舌Μ繧｢繧貞ｱ暮幕縺吶ｋ縺ｨ縲栗-frame block!縲阪→陦ｨ遉ｺ縺輔ｌ逋ｺ蜍輔・                    <strong style={{ color: '#7fbfff' }}>OB繧ｲ繝ｼ繧ｸ繧貞､ｧ縺阪￥繝√Ε繝ｼ繧ｸ</strong>縺励∝捉蝗ｲ縺ｫ繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･縺檎匱逕溘＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝悶・繧ｹ繝・*/}
+                <div style={{ background: 'rgba(255,183,77,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #ffb74d' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>櫨</span>
+                    <span style={{ color: '#ffb74d', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝悶・繧ｹ繝・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝医げ繝ｫ蠑上・蠑ｷ蛹也憾諷九〒縺吶ら匱蜍穂ｸｭ縺ｯ<strong style={{ color: '#ffeb3b' }}>迚ｩ逅・ｸ弱ム繝｡繝ｼ繧ｸ・郁ｿ第磁繝ｻ驕霍晞屬豁ｦ蝎ｨ・峨′2.0蛟・/strong>縺ｫ縺ｪ繧翫∪縺吶′縲・                    繝ｪ繧ｹ繧ｯ縺ｨ縺励※<strong style={{ color: '#ff5252' }}>陲ｫ繝繝｡繝ｼ繧ｸ繧・.0蛟・/strong>縺ｫ縺ｪ繧翫∪縺吶・                    <span style={{ color: '#ff8a80', fontSize: '12px' }}>窶ｻ鬲疲ｳ輔・螽∝鴨縺ｯ荳頑・縺励∪縺帙ｓ縲・/span>
+                    <br />
+                    繝舌Μ繧｢縺ｨ縺ｯ蜷梧凾縺ｫ菴ｿ逕ｨ縺ｧ縺阪★縲∫援譁ｹ縺ｮ逋ｺ蜍穂ｸｭ繧ゅ≧迚・婿繧剃ｽｿ逕ｨ縺吶ｋ縺ｨ閾ｪ蜍慕噪縺ｫ蛻・ｊ譖ｿ繧上ｊ縺ｾ縺吶４P繧堤ｶ咏ｶ夂噪縺ｫ豸郁ｲｻ縺励ヾP縺悟ｰｽ縺阪ｋ縺ｨ閾ｪ蜍戊ｧ｣髯､縺輔ｌ縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝偵・繝ｫ */}
+                <div style={{ background: 'rgba(76,175,80,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #4caf50' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>猪</span>
+                    <span style={{ color: '#4caf50', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝偵・繝ｫ</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    HP繧貞屓蠕ｩ縺励∪縺吶ょ屓蠕ｩ驥上・HP蜀咲函繧ｹ繝・・繧ｿ繧ｹ縺ｫ蝓ｺ縺･縺阪∪縺吶・                    1繧ｲ繝ｼ繝縺ゅ◆繧翫・<strong style={{ color: '#ffeb3b' }}>菴ｿ逕ｨ蝗樊焚縺碁剞繧峨ｌ縺ｦ</strong>縺翫ｊ縲∝屓謨ｰ縺ｯ繝｡繧ｿ繝励Ο繧ｰ繝ｬ繝・す繝ｧ繝ｳ縲後ヲ繝ｼ繝ｫ縲阪・繝ｬ繝吶Ν縺ｫ萓晏ｭ倥＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝槭げ繝阪ャ繝・*/}
+                <div style={{ background: 'rgba(33,150,243,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #2196f3' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>ｧｲ</span>
+                    <span style={{ color: '#2196f3', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝槭げ繝阪ャ繝・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝輔ぅ繝ｼ繝ｫ繝我ｸ翫・縺吶∋縺ｦ縺ｮ繝峨Ο繝・・繧｢繧､繝・Β縺ｨ邨碁ｨ灘､繧ｸ繧ｧ繝繧偵・繝ｬ繧､繝､繝ｼ縺ｮ蜈・∈蠑輔″蟇・○縺ｾ縺吶・                    繝偵・繝ｫ縺ｨ蜷梧ｧ倥↓<strong style={{ color: '#ffeb3b' }}>菴ｿ逕ｨ蝗樊焚縺碁剞繧峨ｌ縺ｦ</strong>縺翫ｊ縲∝屓謨ｰ縺ｯ繝｡繧ｿ繝励Ο繧ｰ繝ｬ繝・す繝ｧ繝ｳ縲後・繧ｰ繝阪ャ繝医阪・繝ｬ繝吶Ν縺ｫ萓晏ｭ倥＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝｡繧ｬ繧ｯ繝ｩ繝・す繝･ */}
+                <div style={{ background: 'rgba(244,67,54,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #f44336' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>徴</span>
+                    <span style={{ color: '#f44336', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    蜻ｨ蝗ｲ縺ｮ謨ｵ蜈ｨ菴薙↓螟ｧ繝繝｡繝ｼ繧ｸ繧剃ｸ弱∴縲・strong style={{ color: '#00e5ff' }}>縺吶∋縺ｦ縺ｮ謨ｵ蠑ｾ繧呈ｶ亥悉</strong>縺励∽ｸ螳壽凾髢鍋┌謨ｵ縺ｫ縺ｪ繧翫∪縺吶・                    繝繝｡繝ｼ繧ｸ驥上・霑第磁謾ｻ謦・鴨・矩□霍晞屬謾ｻ謦・鴨・矩ｭ疲ｳ墓判謦・鴨縺ｮ蜷育ｮ励〒縺吶・                  </p>
+                  <p style={{ fontSize: '13px', color: '#ff8a80', margin: '8px 0 0 0', lineHeight: '1.6', background: 'rgba(244,67,54,0.1)', padding: '8px 10px', borderRadius: '6px' }}>
+                    笞・・逋ｺ蜍輔↓縺ｯSP繧・strong>50</strong>豸郁ｲｻ縺励√＆繧峨↓<strong style={{ color: '#ff5252' }}>譛螟ｧHP縺ｮ蝓ｺ遉主､縺・0豌ｸ邯壽ｸ帛ｰ・/strong>縺吶ｋ繝壹リ繝ｫ繝・ぅ縺後≠繧翫∪縺吶・                    譛螟ｧHP縺・0莉･荳九・蝣ｴ蜷医・逋ｺ蜍輔〒縺阪∪縺帙ｓ縲・                  </p>
+                </div>
+
+                {/* 繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･ */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>笨ｨ</span>
+                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繧ｸ繝｣繧ｹ繝亥屓驕ｿ繧・ず繝｣繧ｹ繝医ぎ繝ｼ繝画・蜉滓凾縺ｫ逋ｺ逕溘☆繧玖｡晄茶豕｢縺ｧ縺吶・br />
+                    繝ｻ蜊雁ｾ・.0m莉･蜀・・<strong style={{ color: '#00e5ff' }}>謾ｻ謦・愛螳夲ｼ域雰蠑ｾ繧・ｳ｢邏具ｼ峨ｒ豸亥悉</strong>縺励∪縺吶・br />
+                    繝ｻ蜊雁ｾ・.5m莉･蜀・・謨ｵ縺ｫ繝繝｡繝ｼ繧ｸ繧剃ｸ弱∴縲∝､ｧ縺阪￥蜷ｹ縺埼｣帙・縺励∪縺吶・br />
+                    繝ｻ蝓ｺ譛ｬ螽∝鴨縺ｯ<strong style={{ color: '#ffeb3b' }}>(霑第磁謾ｻ謦・鴨・矩□髫疲判謦・鴨)/2</strong>縺ｧ縺吶・                  </p>
+                </div>
+
+              </div>
+            </div>
+              笞・・逋ｺ蜍輔↓縺ｯSP繧・strong>50</strong>豸郁ｲｻ縺励√＆繧峨↓<strong style={{ color: '#ff5252' }}>譛螟ｧHP縺ｮ蝓ｺ遉主､縺・0豌ｸ邯壽ｸ帛ｰ・/strong>縺吶ｋ繝壹リ繝ｫ繝・ぅ縺後≠繧翫∪縺吶・                  譛螟ｧHP縺・0莉･荳九・蝣ｴ蜷医・逋ｺ蜍輔〒縺阪∪縺帙ｓ縲・                </p>
+              </div>
+
+              {/* 繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･ */}
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '18px' }}>笨ｨ</span>
+                  <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                  繧ｸ繝｣繧ｹ繝亥屓驕ｿ繧・ず繝｣繧ｹ繝医ぎ繝ｼ繝画・蜉滓凾縺ｫ逋ｺ逕溘☆繧玖｡晄茶豕｢縺ｧ縺吶・br />
+                  繝ｻ蜊雁ｾ・.0m莉･蜀・・<strong style={{ color: '#00e5ff' }}>謾ｻ謦・愛螳夲ｼ域雰蠑ｾ繧・ｳ｢邏具ｼ峨ｒ豸亥悉</strong>縺励∪縺吶・br />
+                  繝ｻ蜊雁ｾ・.5m莉･蜀・・謨ｵ縺ｫ繝繝｡繝ｼ繧ｸ繧剃ｸ弱∴縲∝､ｧ縺阪￥蜷ｹ縺埼｣帙・縺励∪縺吶・br />
+                  繝ｻ蝓ｺ譛ｬ螽∝鴨縺ｯ<strong style={{ color: '#ffeb3b' }}>(霑第磁謾ｻ謦・鴨・矩□髫疲判謦・鴨)/2</strong>縺ｧ縺吶・                </p>
+              </div>
+
+            </div>
+          </div>
+        </section>
+      )}
+
+      {controlSubTab === 'menu' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            {/* 繧ｭ繝ｼ繝懊・繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｭ繝ｼ繝懊・繝・/h3>
+              <div className="help-row"><span>驕ｸ謚・/span><div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}><span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>竊・/kbd></span></div></div>
+              <div className="help-row"><span>豎ｺ螳・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Space</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Enter</kbd></div></div>
+              <div className="help-row"><span>繧ｭ繝｣繝ｳ繧ｻ繝ｫ</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Esc</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>BackSpace</kbd></div></div>
+              <div className="help-row"><span>繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Q</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>E</kbd></div></div>
+              <div className="help-row"><span>繧ｵ繝悶ち繝門・繧頑崛縺・/span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Z</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>C</kbd></div></div>
+            </div>
+
+            {/* 繧ｲ繝ｼ繝繝代ャ繝・*/}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #a78bfa', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>繧ｲ繝ｼ繝繝代ャ繝・/h3>
+              <div className="help-row"><span>驕ｸ謚・/span><div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fff' }}><span style={{ fontSize: '24px', lineHeight: 1, width: '24px', textAlign: 'center' }}>笨・/span></div></div>
+              <div className="help-row"><span>豎ｺ螳・/span><span className="gp-btn gp-btn-a" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>A</span></div>
+              <div className="help-row"><span>繧ｭ繝｣繝ｳ繧ｻ繝ｫ</span><span className="gp-btn gp-btn-b" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>B</span></div>
+              <div className="help-row"><span>繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LB</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RB</span></div></div>
+              <div className="help-row"><span>繧ｵ繝悶ち繝門・繧頑崛縺・/span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LT</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RT</span></div></div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
+  const renderSystems = () => (
+    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* 繧ｵ繝悶ち繝剖I */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button
+          onClick={() => { setSystemSubTab('core'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'core' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'core' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'core' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          笞呻ｸ・繧ｳ繧｢繝ｻ繧ｷ繧ｹ繝・Β
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('battle'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'battle' ? '#bf7fff' : '#444'}`,
+            background: systemSubTab === 'battle' ? 'rgba(191, 127, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'battle' ? '#bf7fff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          笞費ｸ・繝舌ヨ繝ｫ
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('stats'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'stats' ? '#ffd700' : '#444'}`,
+            background: systemSubTab === 'stats' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'stats' ? '#ffd700' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          投 繧ｹ繝・・繧ｿ繧ｹ
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('hud'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'hud' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'hud' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'hud' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          導 HUD讒区・
+        </button>
+      </div>
+
+      {systemSubTab === 'core' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 繧｢繧ｯ繧ｷ繝ｧ繝ｳ隗｣隱ｬ */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#ff6b6b', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #ff6b6b', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>笞費ｸ・繧｢繧ｯ繧ｷ繝ｧ繝ｳ隗｣隱ｬ</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* 蝗樣∩ */}
+                <div style={{ background: 'rgba(0,229,255,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #00e5ff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>暢</span>
+                    <span style={{ color: '#00e5ff', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>蝗樣∩・医ム繝・す繝･・・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    <strong style={{ color: '#ffeb3b' }}>SP繧・5豸郁ｲｻ</strong>縺励※遘ｻ蜍墓婿蜷托ｼ亥・蜉帙′辟｡縺・ｴ蜷医・蜷代＞縺ｦ縺・ｋ譁ｹ蜷托ｼ峨∈邏譌ｩ縺上ム繝・す繝･縺励∪縺吶・                    <strong style={{ color: '#00e5ff' }}>蜍穂ｽ應ｸｭ(0.25遘帝俣)縺ｯ螳悟・辟｡謨ｵ</strong>縺ｫ縺ｪ繧翫∫┌謨ｵ荳ｭ縺ｫ謨ｵ繧・ｼｾ荳ｸ繧偵☆繧頑栢縺代ｋ縺薙→縺ｧ縲・strong style={{ color: '#bf7fff' }}>AR繧ｲ繝ｼ繧ｸ繧貞ｰ鷹㍼繝√Ε繝ｼ繧ｸ</strong>縺ｧ縺阪∪縺吶・                    <br />
+                    <span style={{ color: '#7fbfff' }}>笳・繧ｸ繝｣繧ｹ繝亥屓驕ｿ・・/span>謨ｵ繧・雰蠑ｾ繧偵ぐ繝ｪ繧ｮ繝ｪ縺ｾ縺ｧ蠑輔″莉倥￠縺溽憾諷九〒蝗樣∩縺吶ｋ縺ｨ縲栗-frame dodge!縲阪→陦ｨ遉ｺ縺輔ｌ逋ｺ蜍輔・                    <strong style={{ color: '#bf7fff' }}>AR繧ｲ繝ｼ繧ｸ繧貞､ｧ縺阪￥繝√Ε繝ｼ繧ｸ</strong>縺励∝捉蝗ｲ縺ｫ繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･縺檎匱逕溘＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝舌Μ繧｢ */}
+                <div style={{ background: 'rgba(167,139,250,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #a78bfa' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>孱・・/span>
+                    <span style={{ color: '#a78bfa', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝舌Μ繧｢・医ぎ繝ｼ繝会ｼ・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝医げ繝ｫ蠑上・髦ｲ蠕｡蟋ｿ蜍｢縺ｧ縺吶らｶｭ謖∽ｸｭ縺ｯSP繧堤ｶ咏ｶ壽ｶ郁ｲｻ縺励∵雰蠑ｾ繧貞女縺代ｋ縺ｨ豸郁ｲｻ縺悟｢怜刈縺励∪縺吶′縲∝酔譎ゅ↓<strong style={{ color: '#7fbfff' }}>OB繧ｲ繝ｼ繧ｸ繧偵メ繝｣繝ｼ繧ｸ</strong>縺ｧ縺阪∪縺吶・                    SP縺悟ｰｽ縺阪ｋ縺ｨ閾ｪ蜍慕噪縺ｫ隗｣髯､縺輔ｌ縲∬ｧ｣髯､蠕後↓<strong style={{ color: '#ffeb3b' }}>1遘帝俣縺ｮ繧ｯ繝ｼ繝ｫ繧ｿ繧､繝</strong>縺檎匱逕溘＠縺ｾ縺吶・                    <br />
+                    <span style={{ color: '#7fbfff' }}>笳・繧ｸ繝｣繧ｹ繝医ぎ繝ｼ繝会ｼ・/span>謨ｵ繧・雰蠑ｾ繧偵ぐ繝ｪ繧ｮ繝ｪ縺ｾ縺ｧ蠑輔″莉倥￠縺溽憾諷九〒繝舌Μ繧｢繧貞ｱ暮幕縺吶ｋ縺ｨ縲栗-frame block!縲阪→陦ｨ遉ｺ縺輔ｌ逋ｺ蜍輔・                    <strong style={{ color: '#7fbfff' }}>OB繧ｲ繝ｼ繧ｸ繧貞､ｧ縺阪￥繝√Ε繝ｼ繧ｸ</strong>縺励∝捉蝗ｲ縺ｫ繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･縺檎匱逕溘＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝悶・繧ｹ繝・*/}
+                <div style={{ background: 'rgba(255,183,77,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #ffb74d' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>櫨</span>
+                    <span style={{ color: '#ffb74d', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝悶・繧ｹ繝・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝医げ繝ｫ蠑上・蠑ｷ蛹也憾諷九〒縺吶ら匱蜍穂ｸｭ縺ｯ<strong style={{ color: '#ffeb3b' }}>迚ｩ逅・ｸ弱ム繝｡繝ｼ繧ｸ・郁ｿ第磁繝ｻ驕霍晞屬豁ｦ蝎ｨ・峨′2.0蛟・/strong>縺ｫ縺ｪ繧翫∪縺吶′縲・                    繝ｪ繧ｹ繧ｯ縺ｨ縺励※<strong style={{ color: '#ff5252' }}>陲ｫ繝繝｡繝ｼ繧ｸ繧・.0蛟・/strong>縺ｫ縺ｪ繧翫∪縺吶・                    <span style={{ color: '#ff8a80', fontSize: '12px' }}>窶ｻ鬲疲ｳ輔・螽∝鴨縺ｯ荳頑・縺励∪縺帙ｓ縲・/span>
+                    <br />
+                    繝舌Μ繧｢縺ｨ縺ｯ蜷梧凾縺ｫ菴ｿ逕ｨ縺ｧ縺阪★縲∫援譁ｹ縺ｮ逋ｺ蜍穂ｸｭ縺ｫ繧ゅ≧迚・婿繧剃ｽｿ逕ｨ縺吶ｋ縺ｨ閾ｪ蜍慕噪縺ｫ蛻・ｊ譖ｿ繧上ｊ縺ｾ縺吶４P繧堤ｶ咏ｶ夂噪縺ｫ豸郁ｲｻ縺励ヾP縺悟ｰｽ縺阪ｋ縺ｨ閾ｪ蜍戊ｧ｣髯､縺輔ｌ縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝偵・繝ｫ */}
+                <div style={{ background: 'rgba(76,175,80,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #4caf50' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>猪</span>
+                    <span style={{ color: '#4caf50', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝偵・繝ｫ</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    HP繧貞屓蠕ｩ縺励∪縺吶ょ屓蠕ｩ驥上・HP蜀咲函繧ｹ繝・・繧ｿ繧ｹ縺ｫ蝓ｺ縺･縺阪∪縺吶・                    1繧ｲ繝ｼ繝縺ゅ◆繧翫・<strong style={{ color: '#ffeb3b' }}>菴ｿ逕ｨ蝗樊焚縺碁剞繧峨ｌ縺ｦ</strong>縺翫ｊ縲∝屓謨ｰ縺ｯ繝｡繧ｿ繝励Ο繧ｰ繝ｬ繝・す繝ｧ繝ｳ縲後ヲ繝ｼ繝ｫ縲阪・繝ｬ繝吶Ν縺ｫ萓晏ｭ倥＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝槭げ繝阪ャ繝・*/}
+                <div style={{ background: 'rgba(33,150,243,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #2196f3' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>ｧｲ</span>
+                    <span style={{ color: '#2196f3', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝槭げ繝阪ャ繝・/span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繝輔ぅ繝ｼ繝ｫ繝我ｸ翫・縺吶∋縺ｦ縺ｮ繝峨Ο繝・・繧｢繧､繝・Β縺ｨ邨碁ｨ灘､繧ｸ繧ｧ繝繧偵・繝ｬ繧､繝､繝ｼ縺ｮ蜈・∈蠑輔″蟇・○縺ｾ縺吶・                    繝偵・繝ｫ縺ｨ蜷梧ｧ倥↓<strong style={{ color: '#ffeb3b' }}>菴ｿ逕ｨ蝗樊焚縺碁剞繧峨ｌ縺ｦ</strong>縺翫ｊ縲∝屓謨ｰ縺ｯ繝｡繧ｿ繝励Ο繧ｰ繝ｬ繝・す繝ｧ繝ｳ縲後・繧ｰ繝阪ャ繝医阪・繝ｬ繝吶Ν縺ｫ萓晏ｭ倥＠縺ｾ縺吶・                  </p>
+                </div>
+
+                {/* 繝｡繧ｬ繧ｯ繝ｩ繝・す繝･ */}
+                <div style={{ background: 'rgba(244,67,54,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #f44336' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>徴</span>
+                    <span style={{ color: '#f44336', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    蜻ｨ蝗ｲ縺ｮ謨ｵ蜈ｨ菴薙↓螟ｧ繝繝｡繝ｼ繧ｸ繧剃ｸ弱∴縲・strong style={{ color: '#00e5ff' }}>縺吶∋縺ｦ縺ｮ謨ｵ蠑ｾ繧呈ｶ亥悉</strong>縺励∽ｸ螳壽凾髢鍋┌謨ｵ縺ｫ縺ｪ繧翫∪縺吶・                    繝繝｡繝ｼ繧ｸ驥上・霑第磁謾ｻ謦・鴨・矩□霍晞屬謾ｻ謦・鴨・矩ｭ疲ｳ墓判謦・鴨縺ｮ蜷育ｮ励〒縺吶・                  </p>
+                  <p style={{ fontSize: '13px', color: '#ff8a80', margin: '8px 0 0 0', lineHeight: '1.6', background: 'rgba(244,67,54,0.1)', padding: '8px 10px', borderRadius: '6px' }}>
+                    笞・・逋ｺ蜍輔↓縺ｯSP繧・strong>50</strong>豸郁ｲｻ縺励√＆繧峨↓<strong style={{ color: '#ff5252' }}>譛螟ｧHP縺ｮ蝓ｺ遉主､縺・0豌ｸ邯壽ｸ帛ｰ・/strong>縺吶ｋ繝壹リ繝ｫ繝・ぅ縺後≠繧翫∪縺吶・                    譛螟ｧHP縺・0莉･荳九・蝣ｴ蜷医・逋ｺ蜍輔〒縺阪∪縺帙ｓ縲・                  </p>
+                </div>
+
+                {/* 繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･ */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '8px', borderLeft: '3px solid #fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>笨ｨ</span>
+                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>繝励メ繝｡繧ｬ繧ｯ繝ｩ繝・す繝･</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                    繧ｸ繝｣繧ｹ繝亥屓驕ｿ繧・ず繝｣繧ｹ繝医ぎ繝ｼ繝画・蜉滓凾縺ｫ逋ｺ逕溘☆繧玖｡晄茶豕｢縺ｧ縺吶・br />
+                    繝ｻ蜊雁ｾ・.0m莉･蜀・・<strong style={{ color: '#00e5ff' }}>謾ｻ謦・愛螳夲ｼ域雰蠑ｾ繧・ｳ｢邏具ｼ峨ｒ豸亥悉</strong>縺励∪縺吶・br />
+                    繝ｻ蜊雁ｾ・.5m莉･蜀・・謨ｵ縺ｫ繝繝｡繝ｼ繧ｸ繧剃ｸ弱∴縲∝､ｧ縺阪￥蜷ｹ縺埼｣帙・縺励∪縺吶・br />
+                    繝ｻ蝓ｺ譛ｬ螽∝鴨縺ｯ<strong style={{ color: '#ffeb3b' }}>(霑第磁謾ｻ謦・鴨・矩□髫疲判謦・鴨)/2</strong>縺ｧ縺吶・                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="help-system-item" style={{ borderLeftColor: '#7fbfff' }}>
+              <div className="help-system-title"><span style={{ color: '#7fbfff' }}>OB</span> (Obscurity) - 髦ｲ蠕｡繝舌ヵ</div>
+              <p className="help-system-desc">
+                繝ｻ讎りｦ・ 逶ｾ縺ｫ繧医ｋ髦ｲ蠕｡・医ず繝｣繧ｹ繝医ぎ繝ｼ繝会ｼ峨〒闢・ｩ阪＆繧後ｋ謾ｻ謦・ヰ繝輔・br />
+                繝ｻ逋ｺ蜍墓擅莉ｶ: 謨ｵ繧・雰蠑ｾ繧偵ぐ繝ｪ繧ｮ繝ｪ縺ｾ縺ｧ蠑輔″莉倥￠縺溽憾諷九〒繝舌Μ繧｢繧貞ｱ暮幕縺吶ｋ縲後ず繝｣繧ｹ繝医ぎ繝ｼ繝峨肴・蜉溘〒100%闢・ｩ阪・br />
+                繝ｻ蜉ｹ譫・ 繧ｲ繝ｼ繧ｸ驥上↓蠢懊§縺ｦ謾ｻ謦・鴨縺梧怙螟ｧ+50%荳頑・縲・br />
+                繝ｻ貂幄｡ｰ: 髦ｲ蠕｡縺励※縺・↑縺・俣縲∫ｧ帝俣20%・・遘偵〒豸亥､ｱ・峨・騾溷ｺｦ縺ｧ貂帛ｰ代・              </p>
+            </div>
+            <div className="help-system-item" style={{ borderLeftColor: '#bf7fff' }}>
+              <div className="help-system-title"><span style={{ color: '#bf7fff' }}>AR</span> (Adrenaline Rush) - 蝗樣∩繝舌ヵ</div>
+              <p className="help-system-desc">
+                繝ｻ讎りｦ・ 謨ｵ縺ｮ謾ｻ謦・ｒ邏吩ｸ驥阪〒蝗樣∩縺吶ｋ縺薙→縺ｧ逋ｺ蜍輔☆繧倶ｼ壼ｿ・ヰ繝輔・br />
+                繝ｻ逋ｺ蜍墓擅莉ｶ: 縲後ず繝｣繧ｹ繝亥屓驕ｿ縲阪・謌仙粥縲∝屓驕ｿ繧｢繧ｯ繧ｷ繝ｧ繝ｳ荳ｭ縺ｮ縲後☆繧頑栢縺代阪√∪縺溘・縲後ヱ繝ｪ繧｣縲阪・逋ｺ逕溘↓繧医ｊ闢・ｩ阪・br />
+                繝ｻ蜉ｹ譫・ 荳螳壽凾髢薙∽ｼ壼ｿ・紫縺・50%蜉邂励・br />
+                繝ｻ貂幄｡ｰ: 荳螳壽凾髢難ｼ亥渕譛ｬ5遘抵ｼ臥ｵ碁℃縺ｧ豸亥､ｱ縲ょ屓驕ｿ荳ｭ縺ｯ繧ｿ繧､繝槭・縺ｮ貂帛ｰ代′蛛懈ｭ｢縲・              </p>
+            </div>
+            <div className="help-system-item" style={{ borderLeftColor: '#ffd700' }}>
+              <div className="help-system-title"><span style={{ color: '#ffd700' }}>Parry</span> (繝代Μ繧｣) - 迚ｹ谿翫Μ繧ｫ繝舌・</div>
+              <p className="help-system-desc">
+                繝ｻ讎りｦ・ 謨ｵ縺ｨ縺ｮ謗･隗ｦ譎ゅ↓遒ｺ邇・〒逋ｺ逕溘☆繧句ｮ悟・蝗樣∩縲・br />
+                繝ｻ蜉ｹ譫・ 逋ｺ逕滓凾縺ｫ繝繝｡繝ｼ繧ｸ繧堤┌蜉ｹ蛹悶＠縲√＆繧峨↓**OB繧ｲ繝ｼ繧ｸ縺ｨAR繧ｲ繝ｼ繧ｸ縺ｮ荳｡譁ｹ縺御ｸ頑・**縺励∪縺吶・br />
+                繝ｻ陬懆ｶｳ: 繧ｹ繝・・繧ｿ繧ｹ縺ｮ縲後ヱ繝ｪ繧｣逋ｺ逕溽紫縲阪ｒ荳翫￡繧九％縺ｨ縺ｧ逋ｺ蜍慕紫縺碁ｫ倥∪繧翫∪縺吶・              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {systemSubTab === 'battle' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="help-system-item" style={{ borderLeftColor: '#39ff14' }}>
+              <div className="help-system-title"><span style={{ color: '#39ff14' }}>Combo</span> (Overclock) - 繝√ぉ繧､繝ｳ繝懊・繝翫せ</div>
+              <p className="help-system-desc">
+                繝ｻ讎りｦ・ 謾ｻ謦・ｒ蠖薙※邯壹￠繧九％縺ｨ縺ｧ荳頑・縺吶ｋ謾ｻ謦・屓謨ｰ繝舌ヵ縲・br />
+                繝ｻ蜉ｹ譫・ 繝√ぉ繧､繝ｳ謨ｰ縺ｫ蠢懊§縺ｦ謾ｻ謦・屓謨ｰ縺梧怙螟ｧ+50%荳頑・・・00 CHAIN縺ｧ譛螟ｧ・峨・br />
+                繝ｻ貂幄｡ｰ: 陲ｫ蠑ｾ縺吶ｋ縺ｨ蜊ｳ蠎ｧ縺ｫ繝ｪ繧ｻ繝・ヨ縲・              </p>
+            </div>
+            <div className="help-system-item" style={{ borderLeftColor: '#ff5252' }}>
+              <div className="help-system-title"><span style={{ color: '#ff5252' }}>Mega Crush</span> (繝｡繧ｬ繧ｯ繝ｩ繝・す繝･)</div>
+              <p className="help-system-desc">
+                繝ｻ讎りｦ・ SP繧呈ｶ郁ｲｻ縺励※蜻ｨ蝗ｲ縺ｮ謨ｵ縺ｨ蠑ｾ荳ｸ繧貞聖縺埼｣帙・縺咏ｷ頑･蝗樣∩謇区ｮｵ縲・br />
+                繝ｻ蜉ｹ譫・ 蜊雁ｾ・.5m莉･蜀・・謨ｵ縺ｫ繝繝｡繝ｼ繧ｸ・九ヮ繝・け繝舌ャ繧ｯ縲らｯ・峇蜀・・謨ｵ蠑ｾ繧呈ｶ亥悉縲・br />
+                繝ｻ繧ｳ繧ｹ繝・ 菴ｿ逕ｨ譎ゅ↓50 SP繧呈ｶ郁ｲｻ縺励√＆繧峨↓譛螟ｧHP縺・0貂帛ｰ代・              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {systemSubTab === 'stats' && renderStats()}
+
+      {systemSubTab === 'hud' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="help-system-item" style={{ borderLeftColor: '#39ff14' }}>
+              <div className="help-system-title">逕ｻ髱｢譛荳企Κ・夐ｲ陦後・隴ｦ蜻・/div>
+              <p className="help-system-desc">
+                繝ｻEXP繝舌・・夂樟蝨ｨ縺ｮ繝ｬ繝吶Ν縺ｨ邨碁ｨ灘､繧定｡ｨ遉ｺ縺励∪縺吶ゅΞ繝吶Ν縺御ｸ翫′繧九→縲√ｈ繧雁ｼｷ蜉帙↑鬮倥Ξ繝吶Ν陬・ｙ縺後ラ繝ｭ繝・・縺吶ｋ繧医≧縺ｫ縺ｪ繧翫√◎繧後ｉ繧定｣・ｙ縺吶ｋ縺溘ａ縺ｮ譚｡莉ｶ繧よｺ縺溘＆繧後∪縺呻ｼ郁・霄ｫ縺ｮ繝ｬ繝吶Ν繧定ｶ・∴繧玖｣・ｙ縺ｯ陬・捩縺ｧ縺阪∪縺帙ｓ・峨・br />
+                繝ｻ繧ｿ繧､繝槭・・夂樟蝨ｨ縺ｮ繝励Ξ繧､譎る俣繧定｡ｨ遉ｺ縺励∪縺吶・br />
+                繝ｻ隴ｦ蜻翫Γ繝・そ繝ｼ繧ｸ・壽ｬ｡WAVE謗･霑代↑縺ｩ縺ｮ騾夂衍繧偵Μ繧｢繝ｫ繧ｿ繧､繝縺ｧ陦後＞縺ｾ縺吶・              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="help-system-item" style={{ borderLeftColor: '#ff5252' }}>
+                <div className="help-system-title">逕ｻ髱｢蟾ｦ荳奇ｼ夊・蟾ｱ繧ｹ繝・・繧ｿ繧ｹ繝ｻ繝舌ヵ</div>
+                <p className="help-system-desc">
+                  繝ｻHP・壻ｽ灘鴨縲よｮ矩㍼縺ｧ繝舌・縺ｮ濶ｲ縺悟､牙喧縺励∪縺吶・br />
+                  繝ｻSP・壼屓驕ｿ縲√ヰ繝ｪ繧｢縲√Γ繧ｬ繧ｯ繝ｩ繝・す繝･縺ｫ菴ｿ逕ｨ縺吶ｋ繧ｨ繝阪Ν繧ｮ繝ｼ縺ｧ縺吶・br />
+                  繝ｻOB・壹ぎ繝ｼ繝峨ヰ繝輔ら崟縺ｧ縺ｮ髦ｲ蠕｡謌仙粥縺ｫ繧医ｊ闢・ｩ阪＆繧後∪縺吶・br />
+                  繝ｻAR・壼屓驕ｿ繝舌ヵ縲らｴ吩ｸ驥阪・蝗樣∩謌仙粥縺ｫ繧医ｊ逋ｺ蜍輔＠縺ｾ縺吶・br />
+                  繝ｻ繝ｪ繝ｯ繝ｼ繝峨い繧､繧ｳ繝ｳ・夂樟蝨ｨ蜿門ｾ励＠縺ｦ縺・ｋ繧ｹ繧ｭ繝ｫ縺ｮ荳隕ｧ縺ｧ縺吶・                </p>
+              </div>
+              <div className="help-system-item" style={{ borderLeftColor: '#ffd700' }}>
+                <div className="help-system-title">逕ｻ髱｢蜿ｳ荳奇ｼ壹Μ繝ｯ繝ｼ繝臥岼讓吶・繧ｳ繝ｳ繝・/div>
+                <p className="help-system-desc">
+                  繝ｻWAVE・夂樟蝨ｨ縺ｮ髫主ｱ､・医せ繝・・繧ｸ謨ｰ・峨〒縺吶・br />
+                  繝ｻE.CUBE・壹％縺ｮ繝ｩ繝ｳ縺ｧ迯ｲ蠕励＠縺溘お繝翫ず繝ｼ繧ｭ繝･繝ｼ繝厄ｼ磯夊ｲｨ・峨・驥上〒縺吶・br />
+                  繝ｻKILLS・壽ｬ｡縺ｮ繝ｪ繝ｯ繝ｼ繝臥佐蠕励∪縺ｧ縺ｫ蠢・ｦ√↑謦・ｴ謨ｰ縺ｮ騾ｲ謐励〒縺吶・br />
+                  繝ｻCHAIN・夐｣邯壹ヲ繝・ヨ謨ｰ縲よ判謦・屓謨ｰ縺ｨ謨ｵ縺ｮ蜃ｺ迴ｾ騾溷ｺｦ・育ｨｼ縺主柑邇・ｼ峨′荳頑・縺励∪縺吶・                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="help-system-item" style={{ borderLeftColor: '#a78bfa' }}>
+                <div className="help-system-title">逕ｻ髱｢蟾ｦ荳具ｼ夊・蜉帙・繝ｪ繧ｽ繝ｼ繧ｹ</div>
+                <p className="help-system-desc">
+                  繝ｻ繧ｹ繧ｭ繝ｫ・壼屓蠕ｩ繝ｻ逎∝鴨繝ｻ蠕ｩ豢ｻ縺ｪ縺ｩ縺ｮ谿九ｊ菴ｿ逕ｨ蝗樊焚縺ｧ縺吶・br />
+                  繝ｻ螻樊ｧ・壽ｭｦ蝎ｨ縺ｫ莉倅ｸ弱＆繧後※縺・ｋ鬲疲ｳ募ｱ樊ｧ・育ｎ繝ｻ豌ｷ繝ｻ髮ｷ・峨・迥ｶ諷九〒縺吶・br />
+                  繝ｻ繧ｹ繝・・繧ｿ繧ｹ・壽判謦・鴨繧・亟蠕｡蜉帙↑縺ｩ縺ｮ譛邨ら噪縺ｪ繝代Λ繝｡繝ｼ繧ｿ謨ｰ蛟､縺ｧ縺吶・                </p>
+              </div>
+              <div className="help-system-item" style={{ borderLeftColor: '#00e5ff' }}>
+                <div className="help-system-title">逕ｻ髱｢蜿ｳ荳具ｼ壹す繧ｹ繝・Β繝ｭ繧ｰ</div>
+                <p className="help-system-desc">
+                  繝ｻ蜿門ｾ励Ο繧ｰ・壽鏡縺｣縺溘い繧､繝・Β縺ｮ繝ｬ繧｢繝ｪ繝・ぅ縺ｨ蜷咲ｧｰ繧定｡ｨ遉ｺ縺励∪縺吶・br />
+                  繝ｻ閾ｪ蜍戊｣・ｙ・壽悴陬・ｙ縺ｮ繧ｹ繝ｭ繝・ヨ縺ｫ繧｢繧､繝・Β繧貞叙蠕励＠縺滄圀縲∬・蜍戊｣・捩縺ｮ螻･豁ｴ繧定｡ｨ遉ｺ縺励∪縺吶・                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
+  const renderStats = () => (
+    <div className="help-content-fade">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        {[
+          { label: '譛螟ｧHP', desc: '繝励Ξ繧､繝､繝ｼ縺ｮ逕溷多蜉帙・縺ｫ縺ｪ繧九→繧ｲ繝ｼ繝繧ｪ繝ｼ繝舌・縺ｧ縺吶・ },
+          { label: '譛螟ｧSP', desc: '蝗樣∩繧・ヰ繝ｪ繧｢・磯亟蠕｡・峨∝ｱ樊ｧ繧ｨ繝ｳ繝√Ε繝ｳ繝医√Γ繧ｬ繧ｯ繝ｩ繝・す繝･縺ｫ菴ｿ逕ｨ縺吶ｋ繧ｨ繝阪Ν繧ｮ繝ｼ縺ｮ譛螟ｧ蛟､縲・ },
+          { label: '霑第磁謾ｻ謦・鴨', desc: '霑第磁豁ｦ蝎ｨ縺ｫ繧医ｋ逶ｴ謗･謾ｻ謦・・螽∝鴨縲・ },
+          { label: '霑第磁謾ｻ謦・屓謨ｰ', desc: '霑第磁謾ｻ謦・ｒ陦後≧鬆ｻ蠎ｦ・・遘偵≠縺溘ｊ縺ｮ蝗樊焚・峨・ },
+          { label: '驕髫疲判謦・鴨', desc: '驕霍晞屬豁ｦ蝎ｨ縺ｮ螽∝鴨縲・ },
+          { label: '驕髫疲判謦・屓謨ｰ', desc: '驕霍晞屬謾ｻ謦・ｒ陦後≧鬆ｻ蠎ｦ・・遘偵≠縺溘ｊ縺ｮ蝗樊焚・峨・ },
+          { label: '鬲泌鴨', desc: '閾ｪ蜍慕匱蜍輔☆繧矩ｭ疲ｳ包ｼ育↓逅・・髮ｷ謦・・豌ｷ邨撰ｼ峨・螽∝鴨縲・ },
+          { label: '莨壼ｿ・紫', desc: '謾ｻ謦・′蠑ｷ蜉帙↑縲御ｼ壼ｿ・ｼ医け繝ｪ繝・ぅ繧ｫ繝ｫ・峨阪↓縺ｪ繧狗｢ｺ邇・・ },
+          { label: '髦ｲ蠕｡蜉・, desc: '蜿励￠繧九ム繝｡繝ｼ繧ｸ繧剃ｸ螳夐㍼霆ｽ貂帙＠縺ｾ縺吶・ },
+          { label: '繝代Μ繧｣逋ｺ逕溽紫', desc: '謨ｵ縺ｨ縺ｮ謗･隗ｦ譎ゅ↓繝繝｡繝ｼ繧ｸ繧堤┌蜉ｹ蛹悶☆繧狗｢ｺ邇・・ },
+          { label: '遘ｻ蜍暮溷ｺｦ', desc: '繝励Ξ繧､繝､繝ｼ縺ｮ豁ｩ陦後・蝗樣∩縺ｮ騾溘＆縲・ },
+          { label: '蜿門ｾ礼ｯ・峇', desc: '繧｢繧､繝・Β繧・ｵ碁ｨ灘､繧ｸ繧ｧ繝繧貞ｼ輔″蟇・○繧句濠蠕・・ },
+          { label: '閾ｪ辟ｶ蝗槫ｾｩ騾溷ｺｦ', desc: '1遘偵≠縺溘ｊ縺ｮHP閾ｪ蜍募屓蠕ｩ驥上・ },
+        ].map((item, i) => (
+          <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ color: '#00e5ff', fontWeight: 'bold', marginBottom: '8px', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>{item.label}</div>
+            <p style={{ fontSize: '13px', color: '#ccc', margin: 0, lineHeight: '1.5' }}>{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderItems = () => {
+    // 繧ｹ繝・・繧ｿ繧ｹ蜷阪・譌･譛ｬ隱槭・繝・ヴ繝ｳ繧ｰ
+    const statNameJa: Record<string, string> = {
+      MeleeAttack: '霑第磁謾ｻ謦・鴨',
+      RangedAttack: '驕髫疲判謦・鴨',
+      Defense: '髦ｲ蠕｡蜉・,
+      Health: '譛螟ｧHP',
+      Speed: '遘ｻ蜍暮溷ｺｦ',
+      CritChance: '莨壼ｿ・紫',
+      CritDamage: '莨壼ｿ・ム繝｡繝ｼ繧ｸ',
+      FireDamage: '轤弱ム繝｡繝ｼ繧ｸ',
+      IceDamage: '豌ｷ繝繝｡繝ｼ繧ｸ',
+      LightningDamage: '髮ｷ繝繝｡繝ｼ繧ｸ',
+      LifeSteal: 'HP蜷ｸ蜿・,
+      PickupRange: '蜿門ｾ礼ｯ・峇',
+      HpRegen: '閾ｪ辟ｶ蝗槫ｾｩ騾溷ｺｦ',
+      MagicPower: '鬲泌鴨',
+      Evasion: '繝代Μ繧｣逋ｺ逕溽紫',
+    };
+
+    // 繝峨Ο繝・・邇・・險育ｮ・    const rarities = Object.values(Rarity) as Rarity[];
+    const totalWeight = rarities.reduce((sum, r) => sum + RARITY_CONFIG[r].dropWeight, 0);
+
+    return (
+      <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* 繧ｵ繝悶ち繝剖I */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+          <button
+            onClick={() => { setItemSubTab('drops'); playSound('ui_tab_large'); }}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              border: `2px solid ${itemSubTab === 'drops' ? '#00e5ff' : '#444'}`,
+              background: itemSubTab === 'drops' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+              color: itemSubTab === 'drops' ? '#00e5ff' : '#666',
+              transition: 'all 0.2s',
+              fontFamily: 'GenEiLateMin, serif'
+            }}
+          >
+            逃 繝峨Ο繝・・
+          </button>
+          <button
+            onClick={() => { setItemSubTab('resources'); playSound('ui_tab_large'); }}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              border: `2px solid ${itemSubTab === 'resources' ? '#d500f9' : '#444'}`,
+              background: itemSubTab === 'resources' ? 'rgba(213, 0, 249, 0.2)' : 'rgba(0,0,0,0.3)',
+              color: itemSubTab === 'resources' ? '#d500f9' : '#666',
+              transition: 'all 0.2s',
+              fontFamily: 'GenEiLateMin, serif'
+            }}
+          >
+            虫 繝ｪ繧ｽ繝ｼ繧ｹ
+          </button>
+          <button
+            onClick={() => { setItemSubTab('rarity'); playSound('ui_tab_large'); }}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              border: `2px solid ${itemSubTab === 'rarity' ? '#ffd700' : '#444'}`,
+              background: itemSubTab === 'rarity' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+              color: itemSubTab === 'rarity' ? '#ffd700' : '#666',
+              transition: 'all 0.2s',
+              fontFamily: 'GenEiLateMin, serif'
+            }}
+          >
+            箝・繝ｬ繧｢繝ｪ繝・ぅ
+          </button>
+          <button
+            onClick={() => { setItemSubTab('affixes'); playSound('ui_tab_large'); }}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              border: `2px solid ${itemSubTab === 'affixes' ? '#4caf50' : '#444'}`,
+              background: itemSubTab === 'affixes' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(0,0,0,0.3)',
+              color: itemSubTab === 'affixes' ? '#4caf50' : '#666',
+              transition: 'all 0.2s',
+              fontFamily: 'GenEiLateMin, serif'
+            }}
+          >
+            肌 繧｢繝輔ぅ繝・け繧ｹ
+          </button>
+          <button
+            onClick={() => { setItemSubTab('equip'); playSound('ui_tab_large'); }}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              border: `2px solid ${itemSubTab === 'equip' ? '#ff9800' : '#444'}`,
+              background: itemSubTab === 'equip' ? 'rgba(255, 152, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+              color: itemSubTab === 'equip' ? '#ff9800' : '#666',
+              transition: 'all 0.2s',
+              fontFamily: 'GenEiLateMin, serif'
+            }}
+          >
+            笞費ｸ・陬・ｙ
+          </button>
+        </div>
+
+        {itemSubTab === 'drops' && (
+          <section className="help-content-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="help-system-item" style={{ borderLeftColor: '#00bcd4' }}>
+                <div className="help-system-title">帳 <span style={{ color: '#00bcd4' }}>EXP繧ｭ繝･繝ｼ繝・/span></div>
+                <p className="help-system-desc">
+                  繝ｻ蠖｢迥ｶ: 豌ｴ濶ｲ縺ｫ逋ｺ蜈峨☆繧玖廠蠖｢縺ｮ邨先匕縲・br />
+                  繝ｻ蜉ｹ譫・ 蜿門ｾ励☆繧九→繝励Ξ繧､繝､繝ｼ縺ｮ邨碁ｨ灘､縺悟｢怜刈縺励√Ξ繝吶Ν繧｢繝・・縺ｫ雋｢迪ｮ縺励∪縺吶・br />
+                  繝ｻ蜈･謇・ 謨ｵ繧呈茶遐ｴ縺吶ｋ縺ｨ蜃ｺ迴ｾ縲ゅ・繝ｬ繧､繝､繝ｼ縺ｮ縲悟叙蠕礼ｯ・峇縲榊・縺ｫ蜈･繧九→閾ｪ蜍輔〒蜷ｸ蠑輔・蝗槫庶縺輔ｌ縺ｾ縺吶・br />
+                  繝ｻ陬懆ｶｳ: 繝ｬ繝吶Ν縺御ｸ翫′繧九→縲√ｈ繧企ｫ倥Ξ繝吶Ν縺ｮ陬・ｙ縺後ラ繝ｭ繝・・縺吶ｋ繧医≧縺ｫ縺ｪ繧翫∪縺吶・                </p>
+              </div>
+              <div className="help-system-item" style={{ borderLeftColor: '#94a3b8' }}>
+                <div className="help-system-title">逃 <span style={{ color: '#fff' }}>繧｢繧､繝・Β繧ｭ繝･繝ｼ繝・/span></div>
+                <p className="help-system-desc">
+                  繝ｻ蠖｢迥ｶ: 繝ｬ繧｢繝ｪ繝・ぅ縺ｫ蠢懊§縺溯牡縺ｧ逋ｺ蜈峨☆繧九く繝･繝ｼ繝悶・br />
+                  繝ｻ蜉ｹ譫・ 蜿門ｾ励☆繧九→繧､繝ｳ繝吶Φ繝医Μ縺ｫ譬ｼ邏阪＆繧後∬｣・ｙ縺吶ｋ縺薙→縺ｧ繧ｹ繝・・繧ｿ繧ｹ縺悟､牙喧縺励∪縺吶・br />
+                  繝ｻ蜈･謇・ 謨ｵ謦・ｴ譎ゅ↓荳螳夂｢ｺ邇・〒繝峨Ο繝・・縲ゅ・繝ｬ繧､繝､繝ｼ縺ｮ縲悟叙蠕礼ｯ・峇縲榊・縺ｫ蜈･繧九→閾ｪ蜍募屓蜿弱＆繧後∪縺吶・br />
+                  繝ｻ閾ｪ蜍戊｣・ｙ: 蟇ｾ蠢懊☆繧九せ繝ｭ繝・ヨ縺瑚｣・ｙ縺ｪ縺励・蝣ｴ蜷医∝叙蠕励＠縺溯｣・ｙ縺ｯ閾ｪ蜍慕噪縺ｫ陬・捩縺輔ｌ縺ｾ縺吶・br />
+                  繝ｻ陬懆ｶｳ: 逕ｻ髱｢螟悶↓縺ゅｋ繝槭ず繝・け莉･荳翫・繝ｬ繧｢繝ｪ繝・ぅ縺ｮ繧｢繧､繝・Β縺ｯ繧､繝ｳ繧ｸ繧ｱ繝ｼ繧ｿ繝ｼ・遺夢・峨〒譁ｹ蜷代′遉ｺ縺輔ｌ縲√Α繧ｷ繝・け莉･荳翫・繝ｬ繧｢繝ｪ繝・ぅ縺ｮ繧｢繧､繝・Β縺ｫ縺ｯ蜈峨・譟ｱ縺悟・迴ｾ縺励∪縺吶・                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {itemSubTab === 'resources' && (
+          <section className="help-content-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="help-system-item" style={{ borderLeftColor: '#00e5ff' }}>
+                <div className="help-system-title">虫 <span style={{ color: '#00e5ff' }}>E.CUBE</span> (繧ｨ繝翫ず繝ｼ繧ｭ繝･繝ｼ繝・</div>
+                <p className="help-system-desc">
+                  繝ｻ讎りｦ・ 繝｡繧ｿ繝励Ο繧ｰ繝ｬ繝・す繝ｧ繝ｳ・域ｰｸ邯壼ｼｷ蛹厄ｼ峨↓菴ｿ逕ｨ縺吶ｋ蝓ｺ譛ｬ騾夊ｲｨ縲・br />
+                  繝ｻ蜈･謇・ 繧ｲ繝ｼ繝荳ｭ縺ｫ陬・ｙ繧｢繧､繝・Β繧貞叙蠕励☆繧九→縲√Ξ繧｢繝ｪ繝・ぅ縺ｫ蠢懊§縺滄㍼縺瑚・蜍慕噪縺ｫ闢・ｩ阪＆繧後∪縺吶・br />
+                  繝ｻ逕ｨ騾・ 繧ｿ繧､繝医Ν逕ｻ髱｢縺ｮ縲勲eta Progression縲阪Γ繝九Η繝ｼ縺ｧ縲∝推遞ｮ繧ｹ繝・・繧ｿ繧ｹ縺ｮ豌ｸ邯夂噪縺ｪ蠎穂ｸ翫￡縺ｫ菴ｿ逕ｨ縺励∪縺吶・                </p>
+              </div>
+              <div className="help-system-item" style={{ borderLeftColor: '#d500f9' }}>
+                <div className="help-system-title">笞幢ｸ・<span style={{ color: '#d500f9' }}>H.CUBE</span> (繝上う繝代・繧ｭ繝･繝ｼ繝・</div>
+                <p className="help-system-desc">
+                  繝ｻ讎りｦ・ 鬮伜ｺｦ縺ｪ豌ｸ邯壼ｼｷ蛹悶↓菴ｿ逕ｨ縺吶ｋ雋ｴ驥阪↑繝ｪ繧ｽ繝ｼ繧ｹ縲・br />
+                  繝ｻ蜈･謇・ 迚ｹ螳壹・譚｡莉ｶ繧呈ｺ縺溘☆縺薙→縺ｧ迯ｲ蠕励〒縺阪∪縺吶・br />
+                  繝ｻ逕ｨ騾・ 繧ｨ繝翫ず繝ｼ繧ｭ繝･繝ｼ繝悶〒縺ｯ雉ｼ蜈･縺ｧ縺阪↑縺・∽ｸ贋ｽ阪・蠑ｷ蛹夜・岼・医が繝ｼ繝舌・繝峨Λ繧､繝也ｭ会ｼ峨↓菴ｿ逕ｨ縺励∪縺吶・                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {itemSubTab === 'rarity' && (
+          <section className="help-content-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 16px 0', lineHeight: '1.6' }}>
+                  陬・ｙ繧｢繧､繝・Β縺ｫ縺ｯ繝ｬ繧｢繝ｪ繝・ぅ・亥ｸ悟ｰ大ｺｦ・峨′縺ゅｊ縲・ｫ倥＞縺ｻ縺ｩ螟壹￥縺ｮ繧｢繝輔ぅ繝・け繧ｹ・郁ｿｽ蜉蜉ｹ譫懶ｼ峨′莉倅ｸ弱＆繧後∪縺吶・br />
+                  <span style={{ fontSize: '12px', color: '#888' }}>
+                    窶ｻ謗･鬆ｭ霎槭・謗･蟆ｾ霎槭・縺昴ｌ縺槭ｌ譛螟ｧ4譫・亥粋險医〒譛螟ｧ8譫・峨∪縺ｧ莉倅ｸ弱＆繧後∪縺吶・br />
+                    窶ｻ繝峨Ο繝・・Lv縺ｯ縲∝叙蠕玲凾縺ｮ繝励Ξ繧､繝､繝ｼ繝ｬ繝吶Ν縺ｫ蜉邂励＆繧後ｋ繝ｬ繝吶Ν陬懈ｭ｣蛟､縺ｧ縺吶・                  </span>
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {/* 繝倥ャ繝繝ｼ陦・*/}
+                  <div style={{ display: 'grid', gridTemplateColumns: '120px 80px 140px 90px 1fr', gap: '8px', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '4px' }}>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: 'bold' }}>繝ｬ繧｢繝ｪ繝・ぅ</span>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>繝峨Ο繝・・Lv</span>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>繧｢繝輔ぅ繝・け繧ｹ</span>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>E.CUBE</span>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: 'bold', textAlign: 'right' }}>繝峨Ο繝・・邇・/span>
+                  </div>
+                  {rarities.map((r) => {
+                    const config = RARITY_CONFIG[r];
+                    const dropPercent = ((config.dropWeight / totalWeight) * 100).toFixed(3);
+                    const cubeRates: Record<string, number> = {
+                      [Rarity.Common]: 1, [Rarity.Uncommon]: 3, [Rarity.Magic]: 9, [Rarity.Rare]: 27,
+                      [Rarity.Epic]: 81, [Rarity.Legendary]: 243, [Rarity.Mythic]: 729, [Rarity.Immortal]: 2187, [Rarity.Celestial]: 6561
+                    };
+                    const cubeBase = cubeRates[r] || 0;
+
+                    // 繝峨Ο繝・・Lv陬懈ｭ｣縺ｮ蜿門ｾ・                    const dropLvOffsets: Record<string, string> = {
+                      [Rarity.Common]: '+0', [Rarity.Uncommon]: '+0~1', [Rarity.Magic]: '+0~2', [Rarity.Rare]: '+0~3',
+                      [Rarity.Epic]: '+0~4', [Rarity.Legendary]: '+0~5', [Rarity.Mythic]: '+0~6', [Rarity.Immortal]: '+0~7', [Rarity.Celestial]: '+0~8'
+                    };
+                    const dropLv = dropLvOffsets[r] || '+0';
+
+                    // 繧｢繝輔ぅ繝・け繧ｹ縺ｮ蜀・ｨｳ繝代ち繝ｼ繝ｳ縺ｮ逕滓・
+                    const total = config.totalAffixCount;
+                    let affixDisplay = `${total}`;
+
+                    if (total > 0) {
+                      const maxPrefix = Math.min(4, total);
+                      const minPrefix = Math.max(0, total - 4);
+                      const maxSuffix = Math.min(4, total);
+                      const minSuffix = Math.max(0, total - 4);
+
+                      if (total === 8) {
+                        affixDisplay = `8 (4 + 4)`;
+                      } else if (total === 1) {
+                        affixDisplay = `1 (1+0 / 0+1)`;
+                      } else {
+                        // 萓・ 5 (4+1 ・・1+4)
+                        affixDisplay = `${total} (${maxPrefix}+${minSuffix} ・・${minPrefix}+${maxSuffix})`;
+                      }
+                    }
+
+                    return (
+                      <div key={r} style={{ display: 'grid', gridTemplateColumns: '120px 80px 140px 90px 1fr', gap: '8px', padding: '6px 12px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)' }}>
+                        <span style={{ color: config.color, fontWeight: 'bold', fontSize: '14px', fontFamily: 'GenEiLateMin, serif', display: 'flex', alignItems: 'center' }}>
+                          {config.nameJa}
+                        </span>
+                        <span style={{ color: '#ccc', fontSize: '12px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {dropLv}
+                        </span>
+                        <span style={{ color: '#ccc', fontSize: '11px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' }}>
+                          {affixDisplay}
+                        </span>
+                        <span style={{ color: '#00e5ff', fontSize: '13px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {cubeBase} ﾃ有v
+                        </span>
+                        <span style={{ color: '#aaa', fontSize: '14px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          {dropPercent}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {itemSubTab === 'affixes' && (
+          <section className="help-content-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '14px', color: '#aaa', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  繧｢繝輔ぅ繝・け繧ｹ縺ｨ縺ｯ縲∬｣・ｙ縺ｫ莉倅ｸ弱＆繧後ｋ霑ｽ蜉蜉ｹ譫懊〒縺吶・strong style={{ color: '#fff' }}>謗･鬆ｭ霎橸ｼ・refix・・/strong>縺ｨ<strong style={{ color: '#fff' }}>謗･蟆ｾ霎橸ｼ・uffix・・/strong>縺ｮ2遞ｮ鬘槭′縺ゅｊ縲√Ξ繧｢繝ｪ繝・ぅ縺碁ｫ倥＞縺ｻ縺ｩ螟壹￥縺ｮ繧｢繝輔ぅ繝・け繧ｹ縺御ｻ倅ｸ弱＆繧後∪縺吶ょ推繧｢繝輔ぅ繝・け繧ｹ縺ｮ蜉ｹ譫懷､縺ｯ+1%縲・25%縺ｮ遽・峇縺ｧ繝ｩ繝ｳ繝繝縺ｫ豎ｺ螳壹＆繧後∪縺吶・                </p>
+              </div>
+
+              {/* 謗･鬆ｭ霎・*/}
+              <div>
+                <h4 style={{ color: '#00e5ff', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>謗･鬆ｭ霎・(Prefix)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {PREFIX_POOL.map((affix) => (
+                    <div key={affix.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#fff', fontSize: '14px', fontFamily: "'GenEiLateMin', serif" }}>{affix.nameJa}</span>
+                      <span style={{ color: '#888', fontSize: '12px' }}>{affix.modifiers.map(m => STAT_LABELS[m.stat] || m.stat).join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 謗･蟆ｾ霎・*/}
+              <div>
+                <h4 style={{ color: '#ffd700', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #ffd700', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>謗･蟆ｾ霎・(Suffix)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {SUFFIX_POOL.map((affix) => (
+                    <div key={affix.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#fff', fontSize: '14px', fontFamily: "'GenEiLateMin', serif" }}>{affix.nameJa}</span>
+                      <span style={{ color: '#888', fontSize: '12px' }}>{affix.modifiers.map(m => STAT_LABELS[m.stat] || m.stat).join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {itemSubTab === 'equip' && (
+          <section className="help-content-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '14px', color: '#aaa', margin: 0, lineHeight: '1.6' }}>
+                  <strong style={{ color: '#00e5ff' }}>雋ｫ騾壽ｸ幄｡ｰ邇・↓縺､縺・※</strong><br />
+                  霑第磁豁ｦ蝎ｨ縺ｨ荳驛ｨ縺ｮ驕髫疲ｭｦ蝎ｨ縺ｫ縺ｯ縲瑚ｲｫ騾壽ｸ幄｡ｰ邇・阪′險ｭ螳壹＆繧後※縺翫ｊ縲・蝗槭・謾ｻ謦・〒螟壽焚縺ｮ謨ｵ繧呈判謦・☆繧九→螽∝鴨縺悟ｾ舌・↓菴惹ｸ九＠縺ｦ縺・″縺ｾ縺吶りｿ第磁豁ｦ蝎ｨ縺ｫ繧医ｋ謾ｻ謦・・繝偵ャ繝域焚縺ｫ荳企剞縺ｯ辟｡縺丞ｨ∝鴨繧・0%譛ｪ貅縺ｫ縺ｪ繧九％縺ｨ縺ｯ縺ゅｊ縺ｾ縺帙ｓ縺後・□髫疲ｭｦ蝎ｨ縺ｫ繧医ｋ謾ｻ謦・・螽∝鴨縺・%縺ｫ縺ｪ繧九→豸亥､ｱ縺励∪縺吶・                </p>
+                <p style={{ fontSize: '14px', color: '#aaa', margin: '12px 0 0 0', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', lineHeight: '1.6' }}>
+                  <strong style={{ color: '#00e5ff' }}>遘ｻ蜍暮溷ｺｦ菫よ焚縺ｫ縺､縺・※</strong><br />
+                  豁ｦ蝎ｨ縺ｮ驥埼㍼繧・ｲ闕ｷ繧定｡ｨ縺呎欠讓吶〒縺吶ょ､縺悟ｰ上＆縺・⊇縺ｩ遘ｻ蜍暮溷ｺｦ縺御ｽ惹ｸ九＠縺ｾ縺吶りｿ第磁繝ｻ驕髫斐・荳｡譁ｹ縺ｫ豁ｦ蝎ｨ繧定｣・ｙ縺励※縺・ｋ蝣ｴ蜷医・縺昴ｌ縺槭ｌ縺ｮ菫よ焚縺御ｹ礼ｮ励＆繧後∪縺吶・                </p>
+              </div>
+              {/* 霑第磁豁ｦ蝎ｨ */}
+              <div>
+                <h4 style={{ color: '#ff5252', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #ff5252', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>霑第磁豁ｦ蝎ｨ (Melee Weapon)</h4>
+                <p style={{ fontSize: '13px', color: '#aaa', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  譁ｹ蜷代く繝ｼ縺ｧ迢吶▲縺滓婿蜷代↓霑題ｷ晞屬謾ｻ謦・ｒ郢ｰ繧雁・縺励∪縺吶りｿ第磁謾ｻ謦・鴨縺御ｸ頑・縺励∵ｭｦ蝎ｨ縺斐→縺ｫ謾ｻ謦・ｯ・峇繝ｻ騾溷ｺｦ繝ｻ雋ｫ騾壽ｸ幄｡ｰ邇・′逡ｰ縺ｪ繧翫∪縺吶・                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {BASE_ITEMS.filter(item => item.slot === EquipSlot.MeleeWeapon && !item.baseStats.some(s => s.stat === StatType.MagicPower)).map(item => {
+                    const slotInfo = getItemIcon(item);
+                    const catInfo = getItemCategoryInfo(item);
+
+                    return (
+                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '60px', borderLeft: '4px solid #ff5252' }}>
+                        <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '24px' }}>{slotInfo.emoji}</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#fff', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>{item.nameJa}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <span style={{ color: '#888', fontSize: '12px' }}>謾ｻ謦・俣髫・{item.attackInterval}遘・/span>
+                            <span style={{ color: '#888', fontSize: '12px' }}>
+                              {item.pierceDecay ? `雋ｫ騾壽ｸ幄｡ｰ邇・${(item.pierceDecay * 100).toFixed(1)}%` : '雋ｫ騾壽ｸ幄｡ｰ縺ｪ縺・}
+                            </span>
+                            <span style={{ color: '#888', fontSize: '12px' }}>遘ｻ蜍暮溷ｺｦ菫よ焚 {item.moveSpeedMultiplier ? item.moveSpeedMultiplier.toFixed(2) : '1.00'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 驕髫疲ｭｦ蝎ｨ */}
+              <div>
+                <h4 style={{ color: '#42a5f5', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #42a5f5', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>驕髫疲ｭｦ蝎ｨ (Ranged Weapon)</h4>
+                <p style={{ fontSize: '13px', color: '#aaa', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  譁ｹ蜷代く繝ｼ縺ｧ迢吶▲縺滓婿蜷代↓驕霍晞屬謾ｻ謦・ｒ郢ｰ繧雁・縺励∪縺吶る□髫疲判謦・鴨縺御ｸ頑・縺励∵ｭｦ蝎ｨ縺斐→縺ｫ蠑ｾ騾溘・蠑ｾ謨ｰ繝ｻ譛螟ｧ繝偵ャ繝域焚縺ｪ縺ｩ縺檎焚縺ｪ繧翫∪縺吶・                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {BASE_ITEMS.filter(item => item.slot === EquipSlot.RangedWeapon && !item.baseStats.some(s => s.stat === StatType.MagicPower)).map(item => {
+                    const slotInfo = getItemIcon(item);
+                    const catInfo = getItemCategoryInfo(item);
+                    const maxHits = item.pierceDecay ? Math.floor(0.99 / item.pierceDecay) + 1 : (item.pierceCount || 1);
+                    const hitInfo = maxHits >= 999 ? '雋ｫ騾夂┌髯・ : `譛螟ｧ${maxHits}繝偵ャ繝・;
+
+                    return (
+                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '60px', borderLeft: '4px solid #42a5f5' }}>
+                        <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '24px' }}>{slotInfo.emoji}</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#fff', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>{item.nameJa}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <span style={{ color: '#888', fontSize: '12px' }}>謾ｻ謦・俣髫・{item.attackInterval}遘・/ {item.projectileCount}逋ｺ</span>
+                            {item.nameJa === '繧ｰ繝ｬ繝阪・繝峨Λ繝ｳ繝√Ε繝ｼ' ? (
+                              <>
+                                <span style={{ color: '#888', fontSize: '12px' }}>雋ｫ騾壽ｸ幄｡ｰ邇・{(item.pierceDecay! * 100).toFixed(1)}%</span>
+                                <span style={{ color: '#888', fontSize: '12px' }}>{hitInfo}</span>
+                              </>
+                            ) : (
+                              <span style={{ color: '#888', fontSize: '12px' }}>
+                                {item.pierceDecay ? `雋ｫ騾壽ｸ幄｡ｰ邇・${(item.pierceDecay * 100).toFixed(1)}%` : '雋ｫ騾壽ｸ幄｡ｰ縺ｪ縺・} / {hitInfo}
+                              </span>
+                            )}
+                            <span style={{ color: '#888', fontSize: '12px' }}>遘ｻ蜍暮溷ｺｦ菫よ焚 {item.moveSpeedMultiplier ? item.moveSpeedMultiplier.toFixed(2) : '1.00'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 鬲疲ｳ墓ｭｦ蝎ｨ */}
+              <div>
+                <h4 style={{ color: '#ab47bc', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #ab47bc', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>鬲疲ｳ墓ｭｦ蝎ｨ (Magic Weapon)</h4>
+                <p style={{ fontSize: '13px', color: '#aaa', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  鬲泌鴨繧貞ｸｯ縺ｳ縺滓ｭｦ蝎ｨ縺ｧ縺吶よｭｦ蝎ｨ遞ｮ・郁ｿ第磁繝ｻ驕髫費ｼ峨↓繧医▲縺ｦ縲∬ｿ第磁謾ｻ謦・鴨縺ｨ鬲泌鴨縲√∪縺溘・驕髫疲判謦・鴨縺ｨ鬲泌鴨縺御ｸ頑・縺励∪縺吶・                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {BASE_ITEMS.filter(item => item.baseStats.some(s => s.stat === StatType.MagicPower)).map(item => {
+                    const slotInfo = getItemIcon(item);
+                    const catInfo = getItemCategoryInfo(item);
+                    const maxHits = item.pierceDecay ? Math.floor(0.99 / item.pierceDecay) + 1 : (item.pierceCount || 1);
+                    const hitInfo = maxHits >= 999 ? '雋ｫ騾夂┌髯・ : `譛螟ｧ${maxHits}繝偵ャ繝・;
+                    const isMeleeStyle = item.slot === EquipSlot.MeleeWeapon;
+                    const borderColor = isMeleeStyle ? '#ff5252' : '#42a5f5';
+
+                    return (
+                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '60px', borderLeft: `4px solid ${borderColor}` }}>
+                        <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '24px' }}>{slotInfo.emoji}</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#fff', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>{item.nameJa}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <span style={{ color: '#888', fontSize: '12px' }}>謾ｻ謦・俣髫・{item.attackInterval}遘畜!isMeleeStyle && item.projectileCount ? ` / ${item.projectileCount}逋ｺ` : ''}</span>
+                            <span style={{ color: '#888', fontSize: '12px' }}>
+                              {item.pierceDecay ? `雋ｫ騾壽ｸ幄｡ｰ邇・${(item.pierceDecay * 100).toFixed(1)}%` : '雋ｫ騾壽ｸ幄｡ｰ縺ｪ縺・}{item.pierceCount !== undefined ? ` / ${hitInfo}` : ''}
+                            </span>
+                            <span style={{ color: '#888', fontSize: '12px' }}>遘ｻ蜍暮溷ｺｦ菫よ焚 {item.moveSpeedMultiplier ? item.moveSpeedMultiplier.toFixed(2) : '1.00'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 髦ｲ蜈ｷ繝ｻ陬・｣ｾ蜩・*/}
+              <div>
+                <h4 style={{ color: '#66bb6a', margin: '0 0 12px 0', fontSize: '16px', borderLeft: '4px solid #66bb6a', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>髦ｲ蜈ｷ繝ｻ陬・｣ｾ蜩・(Armor & Accessory)</h4>
+                <p style={{ fontSize: '13px', color: '#aaa', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  髦ｲ蠕｡繝ｻ菴灘鴨繝ｻ遘ｻ蜍暮溷ｺｦ繧・・辟ｶ蝗槫ｾｩ縺ｪ縺ｩ縺ｮ繧ｹ繝・・繧ｿ繧ｹ繧貞ｼｷ蛹悶☆繧玖｣・ｙ縺ｧ縺吶・                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {BASE_ITEMS.filter(item => [EquipSlot.Shield, EquipSlot.Armor, EquipSlot.Helmet, EquipSlot.Boots, EquipSlot.Ring, EquipSlot.Amulet].includes(item.slot)).map(item => {
+                    const slotInfo = getItemIcon(item);
+                    return (
+                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '60px', borderLeft: '4px solid #66bb6a' }}>
+                        <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '24px' }}>{slotInfo.emoji}</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: '#fff', fontSize: '15px', fontFamily: "'GenEiLateMin', serif" }}>{item.nameJa}</span>
+                          <span style={{ color: '#888', fontSize: '12px' }}>
+                            {item.baseStats.map(s => STAT_LABELS[s.stat] || s.stat).join(', ')}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+    );
+  };
+
+  const renderElements = () => (
+    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* 繧ｵ繝悶ち繝剖I */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button
+          onClick={() => { setElementSubTab('enchant'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${elementSubTab === 'enchant' ? '#00e5ff' : '#444'}`,
+            background: elementSubTab === 'enchant' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: elementSubTab === 'enchant' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          笨ｨ 螻樊ｧ繧ｨ繝ｳ繝√Ε繝ｳ繝・        </button>
+        <button
+          onClick={() => { setElementSubTab('status'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${elementSubTab === 'status' ? '#ffeb3b' : '#444'}`,
+            background: elementSubTab === 'status' ? 'rgba(255, 235, 59, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: elementSubTab === 'status' ? '#ffeb3b' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          徴 螻樊ｧ繧・ｉ繧・        </button>
+      </div>
+
+      {elementSubTab === 'enchant' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="help-element-item" style={{ borderColor: '#aaa' }}>
+              <div className="help-element-title"><span style={{ color: '#aaa' }}>笞ｪ 辟｡螻樊ｧ</span> (NONE)</div>
+              <p className="help-system-desc">迚ｹ谿翫↑繝・ヰ繝募柑譫懊・縺ゅｊ縺ｾ縺帙ｓ縺後∫黄逅・ム繝｡繝ｼ繧ｸ縺梧ｸ幄｡ｰ縺帙★100%縺ｮ螽∝鴨縺ｧ謾ｻ謦・〒縺阪∪縺吶ょｮ牙ｮ壹＠縺溘ム繝｡繝ｼ繧ｸ繧剃ｸ弱∴縺溘＞蝣ｴ蜷医↓譛牙柑縺ｧ縺吶・/p>
+            </div>
+            <div className="help-element-item" style={{ borderColor: '#ff4500' }}>
+              <div className="help-element-title"><span style={{ color: '#ff4500' }}>櫨 轤主ｱ樊ｧ</span> (FIRE)</div>
+              <p className="help-system-desc">謨ｵ縺ｫ荳螳壽凾髢薙檎㏍辟ｼ縲咲憾諷九ｒ莉倅ｸ弱＠縺ｾ縺吶ら黄逅・ム繝｡繝ｼ繧ｸ縺ｯ闍･蟷ｲ菴惹ｸ九＠縺ｾ縺吶′縲∵雰縺ｮHP繧堤ｶ咏ｶ夂噪縺ｫ蜑翫ｊ蜿悶ｋ縺薙→縺後〒縺阪∪縺吶・/p>
+            </div>
+            <div className="help-element-item" style={{ borderColor: '#00e5ff' }}>
+              <div className="help-element-title"><span style={{ color: '#00e5ff' }}>笶・ｸ・豌ｷ螻樊ｧ</span> (ICE)</div>
+              <p className="help-system-desc">謨ｵ縺ｫ荳螳壽凾髢薙悟㍾邨舌咲憾諷九ｒ莉倅ｸ弱＠縺ｾ縺吶よ雰縺ｮ遘ｻ蜍暮溷ｺｦ繧剃ｽ惹ｸ九＆縺帙∵磁霑代＆繧後ｋ繝ｪ繧ｹ繧ｯ繧呈椛縺医ｋ縺薙→縺後〒縺阪∪縺吶・/p>
+            </div>
+            <div className="help-element-item" style={{ borderColor: '#ffd700' }}>
+              <div className="help-element-title"><span style={{ color: '#ffd700' }}>笞｡ 髮ｷ螻樊ｧ</span> (LIGHTNING)</div>
+              <p className="help-system-desc">謨ｵ縺ｫ荳螳壽凾髢薙梧─髮ｻ縲咲憾諷九ｒ莉倅ｸ弱＠縺ｾ縺吶よ雰縺ｮ謾ｻ謦・ｻ蠎ｦ・域判謦・ち繧､繝槭・・峨→縲∫匱蟆・＆繧後ｋ蠑ｾ縺ｮ騾溷ｺｦ繧剃ｽ惹ｸ九＆縺帙∪縺吶・/p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', marginTop: '10px' }}>
+              <h4 style={{ color: '#00e5ff', margin: '0 0 12px 0', fontFamily: 'GenEiLateMin, serif' }}>螻樊ｧ縺ｮ莉倅ｸ取婿豕・/h4>
+              <p style={{ fontSize: '14px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                蜷・ｱ樊ｧ縺ｮ繧ｨ繝ｳ繝√Ε繝ｳ繝亥ｱ驟ｬ・育ｎ繝ｻ豌ｷ繝ｻ髮ｷ・峨ｒ蜿門ｾ励☆繧九→縲∝ｯｾ蠢懊☆繧九・繧ｿ繝ｳ縺ｧ縺・▽縺ｧ繧よｭｦ蝎ｨ螻樊ｧ繧貞・繧頑崛縺医ｉ繧後∪縺吶ら匱蜍輔↓縺ｯ**SP繧・00豸郁ｲｻ**縺励∪縺吶′縲・*辟｡螻樊ｧ縺ｫ謌ｻ縺咎圀縺ｯSP繧呈ｶ郁ｲｻ縺励∪縺帙ｓ**縲・br />
+                <br />
+                - **繧ｭ繝ｼ繝懊・繝・*: [1]轤・[2]豌ｷ [3]髮ｷ [4]辟｡<br />
+                - **繧ｲ繝ｼ繝繝代ャ繝・*: [笨懷ｷｦ]轤・[笨應ｸ馨豌ｷ [笨懷承]髮ｷ [笨應ｸ犠辟｡
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {elementSubTab === 'status' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="help-system-item" style={{ borderLeftColor: '#ff4500' }}>
+              <div className="help-system-title"><span style={{ color: '#ff4500' }}>辯・┥</span> (BURN)</div>
+              <p className="help-system-desc">
+                繝ｻ繧ｹ繝ｪ繝・・繝繝｡繝ｼ繧ｸ: 1遘偵＃縺ｨ縺ｫ3繝繝｡繝ｼ繧ｸ繧貞女縺醍ｶ壹￠縺ｾ縺呻ｼ育┌謨ｵ譎る俣繧堤┌隕厄ｼ峨・br />
+                繝ｻ陲ｫ繝繝｡繝ｼ繧ｸ蠅怜刈: 謨ｵ縺九ｉ蜿励￠繧矩壼ｸｸ繝繝｡繝ｼ繧ｸ縺・*2蛟・*縺ｫ縺ｪ繧翫∪縺吶・              </p>
+            </div>
+            <div className="help-system-item" style={{ borderLeftColor: '#00e5ff' }}>
+              <div className="help-system-title"><span style={{ color: '#00e5ff' }}>蜃咲ｵ・/span> (FREEZE)</div>
+              <p className="help-system-desc">
+                繝ｻ讖溷虚蜉帑ｽ惹ｸ・ 遘ｻ蜍暮溷ｺｦ縺・*邏・3%菴惹ｸ・*縺励∪縺吶・              </p>
+            </div>
+            <div className="help-system-item" style={{ borderLeftColor: '#ffd700' }}>
+              <div className="help-system-title"><span style={{ color: '#ffd700' }}>諢滄崕</span> (SHOCK)</div>
+              <p className="help-system-desc">
+                繝ｻ謾ｻ謦・溷ｺｦ菴惹ｸ・ 豁ｦ蝎ｨ縺ｮ謾ｻ謦・俣髫斐′**1.5蛟・*縺ｫ蠅怜刈縺励∵焔謨ｰ縺悟､ｧ蟷・↓貂帙ｊ縺ｾ縺吶・br />
+                繝ｻ髮・ｸｭ蜉帑ｽ惹ｸ・ 繧ｯ繝ｪ繝・ぅ繧ｫ繝ｫ邇・′**邏・3%菴惹ｸ・*縺励∪縺吶・              </p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
+              <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>窶ｻ縺薙ｌ繧峨・繝・ヰ繝輔・譎る俣邨碁℃・育ｴ・遘抵ｼ峨〒隗｣髯､縺輔ｌ縺ｾ縺吶・/p>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+        zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontFamily: "'Inter', sans-serif"
+      }}
+    >
+      <div
+        className="menu-anim"
+        style={{
+          width: '800px', maxHeight: '90vh', background: 'rgba(20,20,25,0.95)',
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px',
+          boxShadow: '0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden'
+        }}
+      >
+        {/* 繝倥ャ繝繝ｼ */}
+        <div style={{ padding: '32px 40px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '4px', height: '32px', background: '#00e5ff', borderRadius: '2px', boxShadow: '0 0 10px #00e5ff' }} />
+            <h2 className="zen-dots" style={{ margin: 0, fontSize: '32px', letterSpacing: '4px', fontWeight: 'bold' }}>Help & Tips</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="help-close-btn"
+            style={{
+              background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%',
+              width: '40px', height: '40px', color: '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
+              transition: 'all 0.2s'
+            }}
+          >
+            笨・          </button>
+        </div>
+
+        {/* 繧ｿ繝悶リ繝薙ご繝ｼ繧ｷ繝ｧ繝ｳ */}
+        <div style={{ display: 'flex', padding: '0 40px', background: 'rgba(255,255,255,0.02)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flex: 1 }}>
+            <button onClick={() => { setActiveTab('controls'); playSound('ui_tab_large'); }} className={`help-tab ${activeTab === 'controls' ? 'active' : ''}`}>謫堺ｽ懈婿豕・/button>
+            <button onClick={() => { setActiveTab('systems'); playSound('ui_tab_large'); }} className={`help-tab ${activeTab === 'systems' ? 'active' : ''}`}>繧ｷ繧ｹ繝・Β</button>
+            <button onClick={() => { setActiveTab('items'); playSound('ui_tab_large'); }} className={`help-tab ${activeTab === 'items' ? 'active' : ''}`}>繧｢繧､繝・Β</button>
+            <button onClick={() => { setActiveTab('elements'); playSound('ui_tab_large'); }} className={`help-tab ${activeTab === 'elements' ? 'active' : ''}`}>螻樊ｧ</button>
+          </div>
+        </div>
+
+        {/* 繧ｳ繝ｳ繝・Φ繝・お繝ｪ繧｢ */}
+        <div
+          ref={contentRef}
+          style={{ padding: '32px 40px', flex: 1, overflowY: 'auto', minHeight: '400px' }}
+        >
+          {activeTab === 'controls' && renderControls()}
+          {activeTab === 'systems' && renderSystems()}
+          {activeTab === 'items' && renderItems()}
+          {activeTab === 'elements' && renderElements()}
+        </div>
+
+        {/* 繝輔ャ繧ｿ繝ｼ (謫堺ｽ懊ぎ繧､繝・ */}
+        <div style={{ padding: '20px 40px', background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'center', gap: '32px' }}>
+          {/* 謫堺ｽ懊ぎ繧､繝・*/}
+          <div style={{ display: 'flex', alignItems: 'center', color: '#888', fontSize: '14px' }}>
+            {isGamepad ? (
+              <div className="gp-btn-container" style={{ fontFamily: 'GenEiLateMin, serif' }}>
+                <div style={{ display: 'flex', gap: '0' }}>
+                  <span className="gp-btn gp-btn-side">LB</span><span className="gp-btn gp-btn-side">RB</span>
+                </div>
+                <span className="gp-label">繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <div style={{ display: 'flex', gap: '0', alignItems: 'center' }}>
+                  <span className="gp-btn gp-btn-side">LT</span><span className="gp-btn gp-btn-side">RT</span>
+                  <span style={{ fontSize: '18px', verticalAlign: 'middle', marginLeft: '2px' }}>笨・/span>
+                </div>
+                <span className="gp-label">繧ｵ繝悶ち繝門・繧頑崛縺・/span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <span className="gp-btn gp-btn-rs" style={{ width: '18px', height: '18px', fontSize: '10px' }}>RS</span>
+                <span className="gp-label">繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ</span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <span className="gp-btn gp-btn-b">B</span>
+                <span className="gp-label">髢峨§繧・/span>
+              </div>
+            ) : (
+              <div className="gp-btn-container" style={{ fontFamily: 'GenEiLateMin, serif' }}>
+                <div style={{ display: 'flex', gap: '0' }}>
+                  <kbd className="gp-kbd">Q</kbd><kbd className="gp-kbd">E</kbd>
+                </div>
+                <span className="gp-label">繝｡繧､繝ｳ繧ｿ繝門・繧頑崛縺・/span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <div style={{ display: 'flex', gap: '0' }}>
+                  <kbd className="gp-kbd">Z</kbd><kbd className="gp-kbd">C</kbd>
+                  <kbd className="gp-kbd">竊・/kbd><kbd className="gp-kbd">竊・/kbd>
+                </div>
+                <span className="gp-label">繧ｵ繝悶ち繝門・繧頑崛縺・/span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <div style={{ display: 'flex', gap: '0' }}>
+                  <kbd className="gp-kbd">PgUp</kbd><kbd className="gp-kbd">PgDn</kbd>
+                </div>
+                <span className="gp-label">繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ</span>
+                <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                <kbd className="gp-kbd">Esc</kbd>
+                <span className="gp-label">髢峨§繧・/span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .help-tab {
+          padding: 16px 32px;
+          background: transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
+          color: #666;
+          font-family: 'GenEiLateMin', serif;
+          font-size: 18px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+          letter-spacing: 1px;
+        }
+        .help-tab.active {
+          color: #00e5ff;
+          border-bottom-color: #00e5ff;
+          text-shadow: 0 0 10px rgba(0,229,255,0.5);
+        }
+        .help-tab:hover:not(.active) {
+          color: #aaa;
+          background: rgba(255,255,255,0.02);
+        }
+        .help-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          font-size: 14px;
+          color: #ccc;
+        }
+        .help-system-item {
+          background: rgba(255,255,255,0.03);
+          padding: 16px 20px;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .help-system-title {
+          font-family: 'GenEiLateMin', serif;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 8px;
+          letter-spacing: 1px;
+        }
+        .help-system-desc {
+          font-size: 15px;
+          color: #aaa;
+          line-height: 1.6;
+          margin: 0;
+        }
+        .help-element-item {
+          background: rgba(255,255,255,0.03);
+          padding: 16px 20px;
+          border-radius: 12px;
+          border-left: 4px solid;
+        }
+        .help-element-title {
+          font-family: 'GenEiLateMin', serif;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 8px;
+        }
+        .help-content-fade {
+          animation: helpFadeIn 0.4s ease-out;
+        }
+        @keyframes helpFadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .help-close-btn:hover {
+          background: #ff5252 !important;
+          transform: rotate(90deg);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+
+export default HelpUI;
+
