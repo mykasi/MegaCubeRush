@@ -8,6 +8,7 @@ export interface SaveData {
   showInventoryMainAll: boolean;
   showInventorySubAll: boolean;
   inventoryDisplayLimit: number;
+  // ※コード上の singleStickModeSetting は「シンクロモード」の設定に対応します
   singleStickModeSetting: 'manual' | 'always_on' | 'always_off';
 }
 const SAVE_KEY = 'mega_cube_rush_save';
@@ -23,6 +24,7 @@ export const getSaveData = (): SaveData => {
       showInventoryMainAll: parsed.showInventoryMainAll ?? false,
       showInventorySubAll: parsed.showInventorySubAll ?? true,
       inventoryDisplayLimit: parsed.inventoryDisplayLimit ?? 60,
+      // ※コード上の singleStickModeSetting = シンクロモード設定
       singleStickModeSetting: parsed.singleStickModeSetting ?? 'manual'
     };
   }
@@ -36,6 +38,7 @@ export const getSaveData = (): SaveData => {
     showInventorySubAll: true,
     inventoryDisplayLimit: 60,
     masterVolume: 0,
+    // ※コード上の singleStickModeSetting = シンクロモード設定
     singleStickModeSetting: 'manual'
   };
 };

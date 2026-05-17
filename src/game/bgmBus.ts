@@ -22,17 +22,17 @@ export function setMasterBgmVolume(v: number) {
 }
 
 // 🎵 ここにダウンロードしたBGMファイルのパスを登録します
-// 例: 'stage1': '/bgm/stage1.mp3',
+// 例: 'stage1': 'bgm/stage1.mp3',
 export const BGM_FILES: Record<string, string> = {
-  'title': '/bgm/title.mp3',
-  'wave1_2': '/bgm/wave1_2.mp3',
-  'wave3_4': '/bgm/wave3_4.mp3',
-  'wave5_6': '/bgm/wave5_6.mp3',
-  'wave7_8': '/bgm/wave7_8.mp3',
-  'wave9_10': '/bgm/wave9_10.mp3',
-  'queen': '/bgm/queen.mp3',
-  'wave11_13': '/bgm/wave11_13.mp3',
-  'king': '/bgm/king.mp3',
+  'title': 'bgm/title.mp3',
+  'wave1_2': 'bgm/wave1_2.mp3',
+  'wave3_4': 'bgm/wave3_4.mp3',
+  'wave5_6': 'bgm/wave5_6.mp3',
+  'wave7_8': 'bgm/wave7_8.mp3',
+  'wave9_10': 'bgm/wave9_10.mp3',
+  'queen': 'bgm/queen.mp3',
+  'wave11_13': 'bgm/wave11_13.mp3',
+  'king': 'bgm/king.mp3',
 };
 
 let isInitializing = false;

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGamepad } from '../hooks/useGamepad';
 import { playSound } from '../game/soundBus';
 import { RARITY_CONFIG, PREFIX_POOL, SUFFIX_POOL, BASE_ITEMS } from '../game/items/itemData';
@@ -47,7 +47,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [controlSubTab, setControlSubTab] = useState<'game' | 'menu'>('game');
   const [elementSubTab, setElementSubTab] = useState<'enchant' | 'status'>('enchant');
-  const [systemSubTab, setSystemSubTab] = useState<'core' | 'battle' | 'stats' | 'hud'>('core');
+  const [systemSubTab, setSystemSubTab] = useState<'action' | 'core' | 'battle' | 'stats' | 'hud'>('core');
   const [itemSubTab, setItemSubTab] = useState<'drops' | 'resources' | 'rarity' | 'affixes' | 'equip'>('drops');
 
   const switchTab = useCallback((dir: number) => {
@@ -67,7 +67,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
       setElementSubTab(prev => (prev === 'enchant' ? 'status' : 'enchant'));
     } else if (activeTab === 'systems') {
       setSystemSubTab(prev => {
-        const subTabs: Array<'core' | 'battle' | 'stats' | 'hud'> = ['core', 'battle', 'stats', 'hud'];
+        const subTabs: Array<'action' | 'core' | 'battle' | 'stats' | 'hud'> = ['action', 'core', 'battle', 'stats', 'hud'];
         const currentIdx = subTabs.indexOf(prev);
         const nextIdx = (currentIdx + dir + subTabs.length) % subTabs.length;
         return subTabs[nextIdx];
@@ -249,13 +249,13 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
             </p>
           </div>
 
-          {/* シングルスティックモード */}
+          {/* シンクロモード (※内部コード上は singleStickMode / isSingleStick) */}
           <div style={{ marginTop: '24px', background: 'rgba(0, 229, 255, 0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
             <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '12px', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'GenEiLateMin', serif" }}>
-              🕹️ シングルスティックモード
+              🕹️ シンクロモード
             </h3>
             <p style={{ fontSize: '14px', color: '#ccc', margin: '0 0 16px 0', lineHeight: '1.6' }}>
-              左スティック（またはWASD）のみで移動と攻撃方向の制御を同時に行うモードです。移動した方向に自動的に攻撃を繰り出します。
+              左スティック（またはWASD）のみで移動と攻撃方向の制御を同時に行うモードです。移動した方向に自動的に攻撃を繰り出します。（移動と攻撃方向がシンクロします）
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div>
@@ -275,6 +275,111 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
             </div>
           </div>
 
+
+        </section>
+      )}
+
+      {controlSubTab === 'menu' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            {/* キーボード */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>キーボード</h3>
+              <div className="help-row"><span>選択</span><div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}><span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>←</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>↑</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>↓</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>→</kbd></span></div></div>
+              <div className="help-row"><span>決定</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Space</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Enter</kbd></div></div>
+              <div className="help-row"><span>キャンセル</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Esc</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>BackSpace</kbd></div></div>
+              <div className="help-row"><span>メインタブ切り替え</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Q</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>E</kbd></div></div>
+              <div className="help-row"><span>サブタブ切り替え</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Z</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>C</kbd></div></div>
+            </div>
+
+            {/* ゲームパッド */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #a78bfa', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>ゲームパッド</h3>
+              <div className="help-row"><span>選択</span><div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fff' }}><span style={{ fontSize: '24px', lineHeight: 1, width: '24px', textAlign: 'center' }}>✜</span></div></div>
+              <div className="help-row"><span>決定</span><span className="gp-btn gp-btn-a" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>A</span></div>
+              <div className="help-row"><span>キャンセル</span><span className="gp-btn gp-btn-b" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>B</span></div>
+              <div className="help-row"><span>メインタブ切り替え</span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LB</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RB</span></div></div>
+              <div className="help-row"><span>サブタブ切り替え</span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LT</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RT</span></div></div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+
+  const renderSystems = () => (
+    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* サブタブUI */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button
+          onClick={() => { setSystemSubTab('action'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'action' ? '#ff6b6b' : '#444'}`,
+            background: systemSubTab === 'action' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'action' ? '#ff6b6b' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          🏃 アクション
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('core'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'core' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'core' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'core' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          ⚙️ コア・システム
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('battle'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'battle' ? '#bf7fff' : '#444'}`,
+            background: systemSubTab === 'battle' ? 'rgba(191, 127, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'battle' ? '#bf7fff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          ⚔️ バトル
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('stats'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'stats' ? '#ffd700' : '#444'}`,
+            background: systemSubTab === 'stats' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'stats' ? '#ffd700' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          📊 ステータス
+        </button>
+        <button
+          onClick={() => { setSystemSubTab('hud'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'hud' ? '#00e5ff' : '#444'}`,
+            background: systemSubTab === 'hud' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'hud' ? '#00e5ff' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          📱 HUD構成
+        </button>
+      </div>
+
+      {systemSubTab === 'action' && (
+        <section className="help-content-fade">
           {/* アクション解説 */}
           <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <h3 style={{ color: '#ff6b6b', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #ff6b6b', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>⚔️ アクション解説</h3>
@@ -385,92 +490,6 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
           </div>
         </section>
       )}
-
-      {controlSubTab === 'menu' && (
-        <section className="help-content-fade">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            {/* キーボード */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ color: '#00e5ff', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #00e5ff', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>キーボード</h3>
-              <div className="help-row"><span>選択</span><div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}><span><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>←</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>↑</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>↓</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 8px' }}>→</kbd></span></div></div>
-              <div className="help-row"><span>決定</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Space</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Enter</kbd></div></div>
-              <div className="help-row"><span>キャンセル</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Esc</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>BackSpace</kbd></div></div>
-              <div className="help-row"><span>メインタブ切り替え</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Q</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>E</kbd></div></div>
-              <div className="help-row"><span>サブタブ切り替え</span><div><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>Z</kbd><kbd className="gp-kbd" style={{ fontSize: '14px', padding: '2px 12px' }}>C</kbd></div></div>
-            </div>
-
-            {/* ゲームパッド */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '16px', fontSize: '18px', borderLeft: '4px solid #a78bfa', paddingLeft: '12px', fontFamily: "'GenEiLateMin', serif" }}>ゲームパッド</h3>
-              <div className="help-row"><span>選択</span><div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fff' }}><span style={{ fontSize: '24px', lineHeight: 1, width: '24px', textAlign: 'center' }}>✜</span></div></div>
-              <div className="help-row"><span>決定</span><span className="gp-btn gp-btn-a" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>A</span></div>
-              <div className="help-row"><span>キャンセル</span><span className="gp-btn gp-btn-b" style={{ width: '24px', height: '24px', fontSize: '14px', fontFamily: 'GenEiLateMin, serif' }}>B</span></div>
-              <div className="help-row"><span>メインタブ切り替え</span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LB</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RB</span></div></div>
-              <div className="help-row"><span>サブタブ切り替え</span><div style={{ display: 'flex', gap: '0' }}><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>LT</span><span className="gp-btn gp-btn-side" style={{ height: '22px', minWidth: '40px', fontSize: '13px', fontFamily: 'GenEiLateMin, serif' }}>RT</span></div></div>
-            </div>
-          </div>
-        </section>
-      )}
-    </div>
-  );
-
-  const renderSystems = () => (
-    <div className="help-content-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* サブタブUI */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-        <button
-          onClick={() => { setSystemSubTab('core'); playSound('ui_tab_large'); }}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-            border: `2px solid ${systemSubTab === 'core' ? '#00e5ff' : '#444'}`,
-            background: systemSubTab === 'core' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
-            color: systemSubTab === 'core' ? '#00e5ff' : '#666',
-            transition: 'all 0.2s',
-            fontFamily: 'GenEiLateMin, serif'
-          }}
-        >
-          ⚙️ コア・システム
-        </button>
-        <button
-          onClick={() => { setSystemSubTab('battle'); playSound('ui_tab_large'); }}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-            border: `2px solid ${systemSubTab === 'battle' ? '#bf7fff' : '#444'}`,
-            background: systemSubTab === 'battle' ? 'rgba(191, 127, 255, 0.2)' : 'rgba(0,0,0,0.3)',
-            color: systemSubTab === 'battle' ? '#bf7fff' : '#666',
-            transition: 'all 0.2s',
-            fontFamily: 'GenEiLateMin, serif'
-          }}
-        >
-          ⚔️ バトル
-        </button>
-        <button
-          onClick={() => { setSystemSubTab('stats'); playSound('ui_tab_large'); }}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-            border: `2px solid ${systemSubTab === 'stats' ? '#ffd700' : '#444'}`,
-            background: systemSubTab === 'stats' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.3)',
-            color: systemSubTab === 'stats' ? '#ffd700' : '#666',
-            transition: 'all 0.2s',
-            fontFamily: 'GenEiLateMin, serif'
-          }}
-        >
-          📊 ステータス
-        </button>
-        <button
-          onClick={() => { setSystemSubTab('hud'); playSound('ui_tab_large'); }}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-            border: `2px solid ${systemSubTab === 'hud' ? '#00e5ff' : '#444'}`,
-            background: systemSubTab === 'hud' ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0,0,0,0.3)',
-            color: systemSubTab === 'hud' ? '#00e5ff' : '#666',
-            transition: 'all 0.2s',
-            fontFamily: 'GenEiLateMin, serif'
-          }}
-        >
-          📱 HUD構成
-        </button>
-      </div>
 
       {systemSubTab === 'core' && (
         <section className="help-content-fade">

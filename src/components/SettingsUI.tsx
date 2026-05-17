@@ -18,6 +18,7 @@ interface SettingsUIProps {
   setShowInventorySubAll: (v: boolean) => void;
   setInventoryDisplayLimit: (v: number) => void;
   isGamepadActive: boolean;
+  // ※コード上の singleStickModeSetting は「シンクロモード」の設定に対応します
   singleStickModeSetting: 'manual' | 'always_on' | 'always_off';
   setSingleStickModeSetting: (v: 'manual' | 'always_on' | 'always_off') => void;
 }
@@ -129,6 +130,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
     data.showInventoryMainAll = showInventoryMainAll;
     data.showInventorySubAll = showInventorySubAll;
     data.inventoryDisplayLimit = inventoryDisplayLimit;
+    // ※コード上の singleStickModeSetting = シンクロモード設定
     data.singleStickModeSetting = singleStickModeSetting;
     saveGameData(data);
 
@@ -498,7 +500,8 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
           {activeTab === 'control' && (
             <>
               <div className={`settings-item ${activeIndex === 0 ? 'active' : ''}`} onMouseDown={() => setActiveIndex(0)}>
-                <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>シングルスティックモード</div>
+                {/* ※コード上の singleStickModeSetting = シンクロモード設定 */}
+                <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>シンクロモード</div>
                 <div className="settings-control">
                   <span className="settings-value" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }} style={{ cursor: 'pointer', width: '100%', textAlign: 'right', color: '#00e5ff' }}>
                     {singleStickModeSetting === 'manual' ? 'マニュアル' : (singleStickModeSetting === 'always_on' ? '常時ON' : '常時OFF')}

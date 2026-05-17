@@ -863,7 +863,8 @@ export default function App() {
   const [showInventorySubAll, setShowInventorySubAll] = useState(() => getSaveData().showInventorySubAll);
   const [inventoryDisplayLimit, setInventoryDisplayLimit] = useState(() => getSaveData().inventoryDisplayLimit);
 
-  // シングルスティックモード設定
+  // ※コード上の singleStickModeSetting / isSingleStick は「シンクロモード」に対応します
+  // シンクロモード設定
   const [singleStickModeSetting, setSingleStickModeSetting] = useState<'manual' | 'always_on' | 'always_off'>(() => getSaveData().singleStickModeSetting);
   const [isSingleStick, setIsSingleStick] = useState(false);
 
@@ -954,7 +955,7 @@ export default function App() {
   const isProcessingRewardRef = useRef(false);
   const rewardPhaseRef = useRef(1);
   const lastMegaCrushTimeRef = useRef(0);
-  const rewardTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const acquiredRewardsRef = useRef(acquiredRewards);
   useEffect(() => { acquiredRewardsRef.current = acquiredRewards; }, [acquiredRewards]);
@@ -1983,7 +1984,7 @@ export default function App() {
         }
       }
 
-      // シングルスティックモードの手動切り替え (Ctrl)
+      // シンクロモード（isSingleStick）の手動切り替え (Ctrl)
       if (e.key === 'Control') {
         if (!isInventoryOpen && !isPaused && !isGameOver && singleStickModeSetting === 'manual') {
           setIsSingleStick(p => !p);
@@ -2048,7 +2049,7 @@ export default function App() {
                 return next;
               }
               if (prev === 2) {
-                const next = banishesLeft > 0 ? 4 : (rerollsLeft > 0 ? 3 : (prev === -1 ? 1 : prev));
+                const next = banishesLeft > 0 ? 4 : (rerollsLeft > 0 ? 3 : prev);
                 if (next !== prev) playSound('ui_move');
                 return next;
               }
@@ -2385,7 +2386,7 @@ export default function App() {
               </div>
 
               {/* ロゴ */}
-              <img src="/logo.png" alt="MEGA CUBE RUSH" className="neon-flicker" style={{
+              <img src="logo.png" alt="MEGA CUBE RUSH" className="neon-flicker" style={{
                 width: '80%', maxWidth: '500px', height: 'auto', marginBottom: '8px',
                 filter: 'drop-shadow(0 0 15px rgba(167,139,250,0.8))'
               }} />
@@ -2532,7 +2533,7 @@ export default function App() {
                         return next;
                       }
                       if (prev === 2) {
-                        const next = banishesLeft > 0 ? 4 : (rerollsLeft > 0 ? 3 : (prev === -1 ? 1 : prev));
+                        const next = banishesLeft > 0 ? 4 : (rerollsLeft > 0 ? 3 : prev);
                         if (next !== prev) playSound('ui_move');
                         return next;
                       }
@@ -2750,7 +2751,7 @@ export default function App() {
 
           {/* Grouped HUD will be placed below */}
 
-          {/* シングルスティックモードON表示 */}
+          {/* シンクロモード（isSingleStick）ON表示 */}
           {isSingleStick && !isTitleScreen && !isGameOver && (
             <div style={{
               position: 'fixed', top: '30px', left: '300px', zIndex: (showRewardScreen || isPaused) ? 70 : 40,
@@ -2760,7 +2761,7 @@ export default function App() {
               boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)', pointerEvents: 'none'
             }}>
               <span style={{ fontSize: '18px' }}>🕹️</span>
-              <span>シングルスティック</span>
+              <span>シンクロモードON</span>
             </div>
           )}
 
@@ -3085,10 +3086,10 @@ export default function App() {
                         })()}
                       </span>
 
-                      <div className="reward-card-name makinas-font" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap', marginTop: '24px' }}>
+                      <div className="reward-card-name latemin-font" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap', marginTop: '24px' }}>
                         <span>{reward.name}</span>
                       </div>
-                      <div className="reward-card-desc" style={{ whiteSpace: 'pre-wrap' }}>
+                      <div className="reward-card-desc" style={{ whiteSpace: 'pre-wrap', fontFamily: 'sans-serif' }}>
                         {(() => {
                           const acq = acquiredRewards.find(a => a.id === reward.id);
                           const currentLevel = acq ? acq.count : 0;

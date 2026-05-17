@@ -12,9 +12,9 @@ const lastPlayTimes: Record<string, number> = {};
 const audioBuffers: Record<string, AudioBuffer> = {};
 
 // 🎵 ここにダウンロードした音声ファイルのパスを登録していきます
-// 例: 'swing': '/sounds/swing.mp3',
+// 例: 'swing': 'sounds/swing.mp3',
 const SOUND_FILES: Partial<Record<SoundType, string>> = {
-  'player_spawn': '/sounds/player_spawn.mp3',
+  'player_spawn': 'sounds/player_spawn.mp3',
 };
 
 /** SEのマスターボリューム（0.0 ~ 1.0） */

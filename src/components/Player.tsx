@@ -82,6 +82,7 @@ interface PlayerProps {
   activeEnchant?: string;
   isSpawning?: boolean;
   spawnStartTime?: number;
+  // ※コード上の isSingleStick は「シンクロモード」を指します
   isSingleStick?: boolean;
   onToggleSingleStick?: () => void;
 }
@@ -363,7 +364,7 @@ export const Player = memo(function Player({
     const gp = pollGamepad();
     const pressed = keys.current;
 
-    // ========== シングルスティックモード手動切り替え (R3) ==========
+    // ========== シンクロモード（isSingleStick）手動切り替え (R3) ==========
     const r3Pressed = gp.connected && gp.mainDevice && gp.mainDevice.buttons[11] > 0.5;
     
     if (r3Pressed && !prevR3PressedRef.current) {
@@ -779,7 +780,7 @@ export const Player = memo(function Player({
       prevPointerRef.current.y = _state.pointer.y;
     }
 
-    // シングルスティックモードONかつ、上記エイム入力がない場合のみ、移動入力の方向を向く
+    // シンクロモード（isSingleStick）ONかつ、上記エイム入力がない場合のみ、移動入力の方向を向く
     if (isSingleStick && !hasAimInput && _inputDir.lengthSq() > 0) {
       aimX = _inputDir.x;
       aimZ = _inputDir.z;

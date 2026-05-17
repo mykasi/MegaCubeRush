@@ -1,70 +1,59 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text, Billboard } from '@react-three/drei';
 import type { Group } from 'three';
 
-/**
- * 軽量ダメージポップアップ（Floating Text）
- * Billboard + Text で常にカメラに正面を向ける方式に復元・改修
- */
-
-export const DamageCritType = {
-  None: 0,
-  Critical: 1,
-  SuperCritical: 2,
-} as const;
-export type DamageCritType = typeof DamageCritType[keyof typeof DamageCritType];
+// ===================================
+// 定数・型
+// ===================================
+const MAX_POPUPS = 128;
+const POPUP_LIFETIME = 0.8;
 
 interface PopupData {
   active: boolean;
   x: number;
   y: number;
   z: number;
-  damage: number | string;
-  critType: number; // 0: None, 1: Critical, 2: SuperCritical
-  age: number;      // 秒
+  damage: string | number;
+  age: number;
+  vy: number;
   color: string;
   outlineColor: string;
-  vy: number;
+  critType: number;
   isFollowing: boolean;
 }
 
-const MAX_POPUPS = 128;
-const POPUP_LIFETIME = 0.8;    // 秒
-// RISE_SPEED は vy プロパティ導入により廃止されました
-
-// ===================================
-// グローバルプール（モジュールスコープ）
-// ===================================
 const _pool: PopupData[] = Array.from({ length: MAX_POPUPS }, () => ({
   active: false,
   x: 0,
   y: 0,
   z: 0,
-  damage: 0,
-  critType: 0,
+  damage: '',
   age: 0,
+  vy: 2.5,
   color: '#ffffff',
   outlineColor: '#000000',
-  vy: 2.5,
+  critType: 0,
   isFollowing: false,
 }));
 
 let _nextSlot = 0;
+const _groupRefs: (Group | null)[] = Array.from({ length: MAX_POPUPS }, () => null);
+const _textRefs: any[] = Array.from({ length: MAX_POPUPS }, () => null);
 
-/**
- * ダメージポップアップを生成（外部から呼び出し用）
- */
+// ===================================
+// 外部呼出し用関数
+// ===================================
+
 export function spawnDamagePopup(
   x: number,
   y: number,
   z: number,
-  damage: number | string,
-
+  damage: string | number,
   critTypeRaw: any = 0,
   color: string = '#ffffff',
   outlineColor: string = '#000000',
-  vy: number = 2.5, // 追加 (デフォルトは上に2.5)
+  vy: number = 2.5,
   isFollowing: boolean = false
 ) {
   let parsedCritType = 0;
@@ -80,11 +69,11 @@ export function spawnDamagePopup(
       p.y = y;
       p.z = z;
       p.damage = damage;
-      p.critType = parsedCritType;
       p.age = 0;
+      p.vy = vy;
       p.color = color;
       p.outlineColor = outlineColor;
-      p.vy = vy;
+      p.critType = parsedCritType;
       p.isFollowing = isFollowing;
       _nextSlot = (idx + 1) % MAX_POPUPS;
       return;
@@ -92,13 +81,28 @@ export function spawnDamagePopup(
   }
 }
 
-// ===================================
-// 個別の Ref 管理用
-// ===================================
-const _groupRefs: (Group | null)[] = Array.from({ length: MAX_POPUPS }, () => null);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const _textRefs: any[] = Array.from({ length: MAX_POPUPS }, () => null);
+export function spawnActionPopup(
+  x: number,
+  y: number,
+  z: number,
+  text: string,
+  type: 'heal' | 'parry' | 'absorb' | 'revive' | 'levelup' = 'heal',
+  isFollowing: boolean = true
+) {
+  const colorMap = {
+    heal: { inner: '#4caf50', outline: '#ffffff' },
+    parry: { inner: '#ffffff', outline: '#0099ff' },
+    absorb: { inner: '#ffeb3b', outline: '#000000' },
+    revive: { inner: '#ff9800', outline: '#ffffff' },
+    levelup: { inner: '#ffd700', outline: '#ffffff' },
+  };
+  const colors = colorMap[type] || colorMap.heal;
+  spawnDamagePopup(x, y, z, text, 0, colors.inner, colors.outline, -1.5, isFollowing);
+}
 
+// ===================================
+// サブコンポーネント
+// ===================================
 function PopupText({ index }: { index: number }) {
   return (
     <group
@@ -108,37 +112,45 @@ function PopupText({ index }: { index: number }) {
       <Billboard>
         <Text
           ref={(el) => { _textRefs[index] = el; }}
-          font="/fonts/ZenDots-Regular.ttf"
+          font="fonts/ZenDots-Regular.ttf"
           fontSize={0.45}
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.02}
-          material-transparent={true}
-        >
-          {''}
-        </Text>
+          outlineWidth={0.04}
+          outlineColor="#000000"
+          transparent={true}
+          depthWrite={false}
+          text=""
+        />
       </Billboard>
     </group>
   );
 }
 
 // ===================================
-// メインコンポーネント（一括更新ループ）
+// メインコンポーネント
 // ===================================
 export const DamagePopups = memo(function DamagePopups({ isPaused }: { isPaused?: boolean }) {
+  useEffect(() => {
+    return () => {
+      // アンマウント時に全てのポップアップを非アクティブにする
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        _pool[i].active = false;
+        if (_groupRefs[i]) _groupRefs[i]!.visible = false;
+      }
+    };
+  }, []);
+
   useFrame((_state, delta) => {
     if (isPaused) return;
+
     for (let i = 0; i < MAX_POPUPS; i++) {
       const data = _pool[i];
+      if (!data.active) continue;
+
       const group = _groupRefs[i];
       const text = _textRefs[i];
-
       if (!group || !text) continue;
-
-      if (!data.active) {
-        if (group.visible) group.visible = false;
-        continue;
-      }
 
       data.age += delta;
       if (data.age >= POPUP_LIFETIME) {
@@ -147,86 +159,42 @@ export const DamagePopups = memo(function DamagePopups({ isPaused }: { isPaused?
         continue;
       }
 
-      const progress = data.age / POPUP_LIFETIME; // 0→1
+      // 位置
+      let px = 0, pz = 0;
+      if (data.isFollowing && window.__playerPosRef?.current) {
+        px = window.__playerPosRef.current.x;
+        pz = window.__playerPosRef.current.z;
+      }
+      group.position.set(px + data.x, data.y + data.age * data.vy, pz + data.z);
 
       if (!group.visible) group.visible = true;
 
-      // 上昇移動（isFollowing の場合はプレイヤー位置をベースにする）
-      if (data.isFollowing && window.__playerPosRef) {
-        const px = window.__playerPosRef.current.x;
-        const pz = window.__playerPosRef.current.z;
-        group.position.set(
-          px + data.x,
-          data.y + data.age * data.vy,
-          pz + data.z,
-        );
-      } else {
-        group.position.set(
-          data.x,
-          data.y + data.age * data.vy,
-          data.z,
-        );
+      const opacity = Math.max(0, 1 - (data.age / POPUP_LIFETIME));
+      const baseVal = typeof data.damage === 'string' ? data.damage : Number(data.damage).toFixed(1);
+      const displayStr = data.critType === 2 ? `${baseVal}!!` : data.critType === 1 ? `${baseVal}!` : baseVal;
+
+      // プロパティ更新
+      if (text.text !== displayStr) text.text = displayStr;
+      if (text.color !== data.color) text.color = data.color;
+      if (text.outlineColor !== data.outlineColor) text.outlineColor = data.outlineColor;
+      
+      const targetSize = data.critType === 2 ? 0.70 : data.critType === 1 ? 0.60 : 0.45;
+      if (text.fontSize !== targetSize) text.fontSize = targetSize;
+      
+      if (text.fillOpacity !== opacity) text.fillOpacity = opacity;
+      if (text.outlineOpacity !== opacity) text.outlineOpacity = opacity;
+
+      if (typeof text.sync === 'function') {
+        text.sync();
       }
-
-      // 透明度計算
-      const opacity = 1 - progress * progress;
-
-      // スケール計算 (指示通り: 超会心:1.66, 会心:1.33, 通常:1.0)
-      const scale = data.critType === 2
-        ? 1.66 - progress * 0.5
-        : data.critType === 1
-          ? 1.33 - progress * 0.4
-          : 1.0 - progress * 0.3;
-      group.scale.setScalar(scale);
-
-      // --- ここからテキストのインペラティブな更新処理 ---
-      const baseText = typeof data.damage === 'string' ? data.damage : Number(data.damage).toFixed(1);
-      const newText = data.critType === 2 ? `${baseText}!!` : data.critType === 1 ? `${baseText}!` : baseText;
-
-      if (text.text !== newText) {
-        text.text = newText;
-      }
-
-      text.color = data.color;
-      text.outlineColor = data.outlineColor;
-
-      // 【修正】アウトラインを細くする
-      text.outlineWidth = 0.02;
-
-      // 【修正】ノーマルダメージ(0.50)を小さく(0.40)調整して、カメラ近接による巨大化を相殺
-      text.fontSize = data.critType === 2 ? 0.70 : data.critType === 1 ? 0.60 : 0.40;
-      text.fillOpacity = opacity;
-      text.outlineOpacity = opacity;
-
-      // 【追加】プロパティの変更を3Dメッシュに確実に反映させる
-      text.sync();
     }
   });
 
   return (
     <group>
-      {_pool.map((_, i) => (
+      {Array.from({ length: MAX_POPUPS }).map((_, i) => (
         <PopupText key={i} index={i} />
       ))}
     </group>
   );
 });
-
-export const ActionPopupColor = {
-  HEAL: { inner: '#ffffff', outline: '#339933' },
-  ABSORB: { inner: '#ffffff', outline: '#6600ff' },
-  REVIVE: { inner: '#ffffff', outline: '#ff9900' },
-} as const;
-
-export function spawnActionPopup(
-  x: number,
-  y: number,
-  z: number,
-  text: string,
-  type: keyof typeof ActionPopupColor,
-  isFollowing: boolean = false
-) {
-  const colors = ActionPopupColor[type];
-  spawnDamagePopup(x, y, z, text, 0, colors.inner, colors.outline, -1.5, isFollowing);
-}
-
