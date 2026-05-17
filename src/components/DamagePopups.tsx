@@ -90,10 +90,10 @@ export function spawnActionPopup(
   isFollowing: boolean = true
 ) {
   const colorMap = {
-    heal: { inner: '#4caf50', outline: '#ffffff' },
-    parry: { inner: '#ffffff', outline: '#0099ff' },
-    absorb: { inner: '#ffeb3b', outline: '#000000' },
-    revive: { inner: '#ff9800', outline: '#ffffff' },
+    heal: { inner: '#ffffff', outline: '#4caf50' },
+    parry: { inner: '#ffffff', outline: '#3f3fff' },
+    absorb: { inner: '#ffffff', outline: '#ffeb3b' },
+    revive: { inner: '#ffffff', outline: '#ff9800' },
     levelup: { inner: '#ffd700', outline: '#ffffff' },
   };
   const colors = colorMap[type] || colorMap.heal;
@@ -177,10 +177,10 @@ export const DamagePopups = memo(function DamagePopups({ isPaused }: { isPaused?
       if (text.text !== displayStr) text.text = displayStr;
       if (text.color !== data.color) text.color = data.color;
       if (text.outlineColor !== data.outlineColor) text.outlineColor = data.outlineColor;
-      
+
       const targetSize = data.critType === 2 ? 0.70 : data.critType === 1 ? 0.60 : 0.45;
       if (text.fontSize !== targetSize) text.fontSize = targetSize;
-      
+
       if (text.fillOpacity !== opacity) text.fillOpacity = opacity;
       if (text.outlineOpacity !== opacity) text.outlineOpacity = opacity;
 

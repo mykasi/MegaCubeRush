@@ -151,7 +151,7 @@ export const Player = memo(function Player({
 
   const petitCrushVisualTimerRef = useRef(0);
   const petitCrushAuraRef = useRef<import('three').Mesh>(null);
-  
+
   const barrierCooldownTimerRef = useRef(0);
   const cooldownAuraRef = useRef<import('three').Mesh>(null);
 
@@ -377,7 +377,7 @@ export const Player = memo(function Player({
 
     // ========== シンクロモード（isSingleStick）手動切り替え (R3) ==========
     const r3Pressed = gp.connected && gp.mainDevice && gp.mainDevice.buttons[11] > 0.5;
-    
+
     if (r3Pressed && !prevR3PressedRef.current) {
       onToggleSingleStick?.();
     }
@@ -615,7 +615,7 @@ export const Player = memo(function Player({
         playSound('just_guard');
         playSound('mega_crush');
         addShifukuBuff(100); // OB加算
-        spawnDamagePopup(0, 2.5, 2.0, 'I-frame block!', 0, '#7fbfff', '#FFFFFF', -1.5, true);
+        spawnDamagePopup(0, 2.5, 2.0, 'I-frame block!', 0, '#FFFFFF', '#7fbfff', -1.5, true);
         triggerPetitMegaCrash(); // プチメガクラ発動 (内部で無敵付与・弾消し・ダメージ等実行)
       }
     }
@@ -940,7 +940,7 @@ export const Player = memo(function Player({
         // ダメージ適用
         const result = damagePlayer(finalDmg);
         if (result === 'dead') onPlayerDeath?.();
-        
+
         if (result === 'damaged' || result === 'dead') {
           flashTimerRef.current = 0.5;
           flashColorRef.current = '#ff0000'; // 被弾は赤
@@ -1024,7 +1024,7 @@ export const Player = memo(function Player({
       } else if (skinSetting === 'satellite') {
         visualGroupRef.current.position.y = Math.sin(time * 2.5) * 0.06;
         visualGroupRef.current.rotation.y = 0;
-        
+
         // 衛星キューブ 4点の公転・自転
         const r = 0.8;
         const speed = 2.0;

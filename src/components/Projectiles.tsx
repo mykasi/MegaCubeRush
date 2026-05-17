@@ -628,7 +628,7 @@ export const Projectiles = memo(function Projectiles({
             
             if (enchant !== 'none') {
               fillColor = getEnchantColor(enchant as any); 
-              outlineColor = '#FFFFFF'; // エンチャント追撃は 縁 白に復元
+              outlineColor = '#3f1f7f'; // エンチャント追撃のフチ色を変更
             }
             
             spawnDamagePopup(ex, 1.2, ez, result.finalDamage, critType, fillColor, outlineColor);

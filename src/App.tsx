@@ -1529,15 +1529,20 @@ export default function App() {
     // エナジーキューブのセーブ処理をStateの関数型アップデートから分離
     // React Strict Mode (Dev) での二重加算を防止し、確実に1回だけ保存する
     let finalCubes = energyCubesRef.current;
-    let earnedHyper = window.__queenKilled ? 1 : 0;
+    let earnedHyper = 0;
 
     if (gameModeRef.current === 'normal') {
       if (window.__isGameClear) {
-        earnedHyper += 2; // クリアボーナス：キング撃破でハイパーキューブ2個追加（エナジーキューブ2倍は廃止）
+        earnedHyper = 3; // キング撃破クリア時は一律3個
+      } else if (window.__queenKilled) {
+        earnedHyper = 1; // クイーン撃破後にゲームオーバー時は1個
+      } else {
+        earnedHyper = 0; // クイーン撃破前にゲームオーバー時は0個
       }
     } else if (gameModeRef.current === 'practice') {
-      // プラクティスモードは最終エナジーキューブ量が半減（端数繰り上げ）
+      // プラクティスモードは最終エナジーキューブ量が半減（端数繰り上げ）、ハイパーキューブは常に0個
       finalCubes = Math.ceil(finalCubes / 2);
+      earnedHyper = 0;
     }
 
     if (finalCubes > 0 || earnedHyper > 0) {
@@ -3575,31 +3580,34 @@ export default function App() {
                               })}
                             </div>
                             <div style={{ height: '1px', background: 'rgba(0,229,255,0.2)', margin: '2px 0' }}></div>
-                            {window.__isGameClear ? (
+                            {gameMode === 'practice' ? (
                               <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#00e5ff' }}><span>エナジーキューブ</span><span>{energyCubes}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#ffea00' }}><span>クリアボーナス</span><span>x2</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#00e5ff' }}><span>最終エナジーキューブ</span><span>{energyCubes * 2}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#ffa500' }}><span>プラクティス補正</span><span>x0.5</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#00e5ff' }}><span>最終エナジーキューブ</span><span>{Math.ceil(energyCubes / 2)}</span></div>
                               </>
                             ) : (
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#00e5ff' }}><span>合計エナジーキューブ</span><span>{energyCubes}</span></div>
                             )}
 
                             {(() => {
-                              const baseHyper = window.__queenKilled ? 1 : 0;
-                              if (baseHyper > 0) {
+                              let displayHyper = 0;
+                              if (gameMode === 'normal') {
+                                if (window.__isGameClear) {
+                                  displayHyper = 3;
+                                } else if (window.__queenKilled) {
+                                  displayHyper = 1;
+                                }
+                              }
+
+                              if (displayHyper > 0) {
                                 return (
                                   <>
                                     <div style={{ height: '1px', background: 'rgba(0,229,255,0.2)', margin: '6px 0' }}></div>
-                                    {window.__isGameClear ? (
-                                      <>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#d500f9' }}><span>ハイパーキューブ</span><span>{baseHyper}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#ffea00' }}><span>クリアボーナス</span><span>x2</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#d500f9' }}><span>最終ハイパーキューブ</span><span>{baseHyper * 2}</span></div>
-                                      </>
-                                    ) : (
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#d500f9' }}><span>合計ハイパーキューブ</span><span>{baseHyper}</span></div>
-                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#d500f9' }}>
+                                      <span>合計ハイパーキューブ</span>
+                                      <span>{displayHyper} 個</span>
+                                    </div>
                                   </>
                                 );
                               }
