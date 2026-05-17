@@ -1026,7 +1026,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
                   防御・体力・移動速度や自然回復などのステータスを強化する装備です。
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {BASE_ITEMS.filter(item => [EquipSlot.Shield, EquipSlot.Armor, EquipSlot.Helmet, EquipSlot.Boots, EquipSlot.Ring, EquipSlot.Amulet].includes(item.slot)).map(item => {
+                  {BASE_ITEMS.filter(item => ([EquipSlot.Shield, EquipSlot.Armor, EquipSlot.Helmet, EquipSlot.Boots, EquipSlot.Ring, EquipSlot.Amulet] as EquipSlot[]).includes(item.slot)).map(item => {
                     const slotInfo = getItemIcon(item);
                     return (
                       <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '60px', borderLeft: '4px solid #66bb6a' }}>

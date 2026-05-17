@@ -39,7 +39,7 @@ export interface ProjectileSpawn {
   speed: number;
   targetScaleX?: number;
   critDamage: number;
-  attackStyle?: 'slash' | 'slam' | 'punch' | 'fireball' | 'sweep' | 'vertical_slash' | 'grenade' | 'boomerang' | 'orbit';
+  attackStyle?: 'slash' | 'slam' | 'punch' | 'fireball' | 'sweep' | 'vertical_slash' | 'grenade' | 'boomerang' | 'orbit' | 'thrust' | 'magic_melee';
   pierceDecay: number;
   itemId?: string;
   targetScaleZ?: number;
@@ -69,7 +69,7 @@ interface ProjectileData {
   speed: number;
   targetScaleX: number;
   critDamage: number;
-  attackStyle: 'slash' | 'slam' | 'punch' | 'fireball' | 'sweep' | 'vertical_slash' | 'grenade' | 'boomerang' | 'orbit';
+  attackStyle: 'slash' | 'slam' | 'punch' | 'fireball' | 'sweep' | 'vertical_slash' | 'grenade' | 'boomerang' | 'orbit' | 'thrust' | 'magic_melee';
   pierceDecay: number;
   itemId: string;
   targetScaleZ: number;

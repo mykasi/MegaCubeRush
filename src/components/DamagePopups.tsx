@@ -118,10 +118,10 @@ function PopupText({ index }: { index: number }) {
           anchorY="middle"
           outlineWidth={0.04}
           outlineColor="#000000"
-          transparent={true}
-          depthWrite={false}
-          text=""
-        />
+        >
+          <meshBasicMaterial depthWrite={false} attach="material" />
+          {""}
+        </Text>
       </Billboard>
     </group>
   );

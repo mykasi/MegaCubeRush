@@ -1292,7 +1292,7 @@ export default function App() {
         const pos = window.__playerPosRef.current;
         pullAllDrops(pos.x, pos.z);
         pullAllGems(pos.x, pos.z);
-        spawnActionPopup(0, 2.5, 2.0, 'Absorb!', 'ABSORB', true);
+        spawnActionPopup(0, 2.5, 2.0, 'Absorb!', 'absorb', true);
       }
     }
   }, [magnetUses]);
@@ -2016,7 +2016,7 @@ export default function App() {
           }
           if (e.key === 'ArrowLeft') {
             setSelectedRewardIndex(prev => {
-              if (prev === -1) { playSound('ui_move'); return 0; }
+              if (prev < 0) { playSound('ui_move'); return 0; }
               if (prev === 4) { playSound('ui_move'); return 3; }
               if (prev > 0 && prev <= 2) { playSound('ui_move'); return prev - 1; }
               return prev;
@@ -2025,7 +2025,7 @@ export default function App() {
           }
           if (e.key === 'ArrowRight') {
             setSelectedRewardIndex(prev => {
-              if (prev === -1) { playSound('ui_move'); return 2; }
+              if (prev < 0) { playSound('ui_move'); return 2; }
               if (prev === 3) { playSound('ui_move'); return 4; }
               if (prev >= 0 && prev < 2) { playSound('ui_move'); return prev + 1; }
               return prev;
@@ -2043,8 +2043,13 @@ export default function App() {
           }
           if (e.key === 'ArrowDown') {
             setSelectedRewardIndex(prev => {
-              if (prev === 0 || prev === 1 || prev === -1) {
-                const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : (prev === -1 ? 1 : prev));
+              if (prev < 0) {
+                const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : 1);
+                if (next !== prev) playSound('ui_move');
+                return next;
+              }
+              if (prev === 0 || prev === 1) {
+                const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : prev);
                 if (next !== prev) playSound('ui_move');
                 return next;
               }
@@ -2291,7 +2296,7 @@ export default function App() {
           const healAmount = playerStatsRef.current.hpRegen * 100;
           healPlayer(healAmount);
           if (window.__playerPosRef) {
-            spawnActionPopup(0, 2.5, 2.0, `+${healAmount.toFixed(1)}`, 'HEAL', true);
+            spawnActionPopup(0, 2.5, 2.0, `+${healAmount.toFixed(1)}`, 'heal', true);
           }
         }
       } else if (e.button === 4) {
@@ -2527,8 +2532,13 @@ export default function App() {
                     playSound('ui_move');
                   } else if (showRewardScreen) {
                     setSelectedRewardIndex(prev => {
-                      if (prev === 0 || prev === 1 || prev === -1) {
-                        const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : (prev === -1 ? 1 : prev));
+                      if (prev < 0) {
+                        const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : 1);
+                        if (next !== prev) playSound('ui_move');
+                        return next;
+                      }
+                      if (prev === 0 || prev === 1) {
+                        const next = rerollsLeft > 0 ? 3 : (banishesLeft > 0 ? 4 : prev);
                         if (next !== prev) playSound('ui_move');
                         return next;
                       }
@@ -2550,7 +2560,7 @@ export default function App() {
                 onDpadLeft={() => {
                   if (showRewardScreen) {
                     setSelectedRewardIndex(prev => {
-                      if (prev === -1) { playSound('ui_move'); return 0; }
+                      if (prev < 0) { playSound('ui_move'); return 0; }
                       if (prev === 4) { playSound('ui_move'); return 3; }
                       if (prev > 0 && prev <= 2) { playSound('ui_move'); return prev - 1; }
                       return prev;
@@ -2571,7 +2581,7 @@ export default function App() {
                 onDpadRight={() => {
                   if (showRewardScreen) {
                     setSelectedRewardIndex(prev => {
-                      if (prev === -1) { playSound('ui_move'); return 2; }
+                      if (prev < 0) { playSound('ui_move'); return 2; }
                       if (prev === 3) { playSound('ui_move'); return 4; }
                       if (prev >= 0 && prev < 2) { playSound('ui_move'); return prev + 1; }
                       return prev;
@@ -2687,7 +2697,7 @@ export default function App() {
                       });
                       if (window.__playerPosRef) {
                         const pos = window.__playerPosRef.current;
-                        spawnActionPopup(0, 2.5, 2.0, 'Revive!', 'REVIVE', true);
+                        spawnActionPopup(0, 2.5, 2.0, 'Revive!', 'revive', true);
                       }
                       return;
                     }
@@ -2734,7 +2744,7 @@ export default function App() {
                     healPlayer(healAmount);
                     if (window.__playerPosRef) {
                       const pos = window.__playerPosRef.current;
-                      spawnActionPopup(0, 2.5, 2.0, `+${healAmount.toFixed(1)}`, 'HEAL', true);
+                      spawnActionPopup(0, 2.5, 2.0, `+${healAmount.toFixed(1)}`, 'heal', true);
                     }
                   }
                 }}
