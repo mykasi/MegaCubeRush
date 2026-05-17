@@ -145,7 +145,7 @@ const COMPARE_ROWS: { label: string; key: keyof PlayerStats; suffix?: string; fi
   { label: 'パリィ発生率', key: 'evasion', suffix: '%', fixed: 1 },
   { label: '取得範囲', key: 'pickupRange', fixed: 1 },
   { label: '移動速度', key: 'moveSpeed', fixed: 1 },
-  { label: '自然回復', key: 'hpRegen', suffix: '/秒', fixed: 2 },
+  { label: '自然回復速度', key: 'hpRegen', suffix: '/sec', fixed: 2 },
 ];
 
 /** ジャンル判定ヘルパー関数 (BaseItemDefinition 対応版) */
@@ -968,13 +968,13 @@ export const InventoryUI = memo(function InventoryUI({
                         value: (statTab === 'total' ? (playerStatsRef.current.meleeAttackPower || 0) : getBaseStat('meleeAttackPower')).toFixed(1),
                         color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined 
                       },
-                      { label: '近接攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.meleeAttackInterval : 1.0)).toFixed(2)}回/秒` },
+                      { label: '近接攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.meleeAttackInterval : 1.0)).toFixed(2)}/sec` },
                       { 
                         label: '遠隔攻撃力', 
                         value: (statTab === 'total' ? (playerStatsRef.current.rangedAttackPower || 0) : getBaseStat('rangedAttackPower')).toFixed(1),
                         color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined 
                       },
-                      { label: '遠隔攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.rangedAttackInterval : 1.0)).toFixed(2)}回/秒` },
+                      { label: '遠隔攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.rangedAttackInterval : 1.0)).toFixed(2)}/sec` },
                       { label: '魔力', value: (statTab === 'total' ? playerStatsRef.current.magicPower : getBaseStat('magicPower')).toFixed(1) },
                       { 
                         label: '会心率', 

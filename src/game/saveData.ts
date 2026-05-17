@@ -10,6 +10,7 @@ export interface SaveData {
   inventoryDisplayLimit: number;
   // ※コード上の singleStickModeSetting は「シンクロモード」の設定に対応します
   singleStickModeSetting: 'manual' | 'always_on' | 'always_off';
+  playerSkinSetting?: 'default' | 'sphere' | 'crystal' | 'armor' | 'satellite';
 }
 const SAVE_KEY = 'mega_cube_rush_save';
 export const getSaveData = (): SaveData => {
@@ -25,7 +26,8 @@ export const getSaveData = (): SaveData => {
       showInventorySubAll: parsed.showInventorySubAll ?? true,
       inventoryDisplayLimit: parsed.inventoryDisplayLimit ?? 60,
       // ※コード上の singleStickModeSetting = シンクロモード設定
-      singleStickModeSetting: parsed.singleStickModeSetting ?? 'manual'
+      singleStickModeSetting: parsed.singleStickModeSetting ?? 'manual',
+      playerSkinSetting: parsed.playerSkinSetting ?? 'default'
     };
   }
   return { 
@@ -39,7 +41,8 @@ export const getSaveData = (): SaveData => {
     inventoryDisplayLimit: 60,
     masterVolume: 0,
     // ※コード上の singleStickModeSetting = シンクロモード設定
-    singleStickModeSetting: 'manual'
+    singleStickModeSetting: 'manual',
+    playerSkinSetting: 'default'
   };
 };
 export const saveGameData = (data: SaveData) => {

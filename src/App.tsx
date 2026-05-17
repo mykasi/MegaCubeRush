@@ -192,7 +192,8 @@ function GameScene({
   spawnStartTime,
   isHelpOpen,
   isSingleStick,
-  onToggleSingleStick
+  onToggleSingleStick,
+  playerSkinSetting
 }: {
   onGamepadConnect: (c: boolean, d: GamepadInfo[], m: string) => void;
   onToggleInventory: () => void;
@@ -227,6 +228,7 @@ function GameScene({
   isHelpOpen: boolean;
   isSingleStick: boolean;
   onToggleSingleStick: () => void;
+  playerSkinSetting: 'default' | 'sphere' | 'crystal' | 'armor' | 'satellite';
 }) {
   const { poll } = useGamepad();
   const lastYPressed = useRef(false);
@@ -525,6 +527,7 @@ function GameScene({
         spawnStartTime={spawnStartTime}
         isSingleStick={isSingleStick}
         onToggleSingleStick={onToggleSingleStick}
+        skinSetting={playerSkinSetting}
       />
       <Projectiles maxCount={200} isGameOver={isGameOver || isPaused || isSpawning} activeEnchant={activeEnchant} />
       <EnemyProjectiles maxCount={50} isGameOver={isGameOver || isPaused || isSpawning} />
@@ -631,13 +634,13 @@ const StatusHUD = memo(function StatusHUD({
       value: (playerStatsRef.current.meleeAttackPower || 0).toFixed(1),
       color: isShifukuActive ? '#7fbfff' : '#fff'
     },
-    { label: '近接攻撃回数', value: (1 / Math.max(0.01, playerStatsRef.current.meleeAttackInterval)).toFixed(2) + '回/秒' },
+    { label: '近接攻撃回数', value: (1 / Math.max(0.01, playerStatsRef.current.meleeAttackInterval)).toFixed(2) + '/sec' },
     {
       label: '遠隔攻撃力',
       value: (playerStatsRef.current.rangedAttackPower || 0).toFixed(1),
       color: isShifukuActive ? '#7fbfff' : '#fff'
     },
-    { label: '遠隔攻撃回数', value: (1 / Math.max(0.01, playerStatsRef.current.rangedAttackInterval)).toFixed(2) + '回/秒' },
+    { label: '遠隔攻撃回数', value: (1 / Math.max(0.01, playerStatsRef.current.rangedAttackInterval)).toFixed(2) + '/sec' },
     { label: '魔力', value: (playerStatsRef.current.magicPower || 0).toFixed(1) },
     {
       label: '会心率',
@@ -867,6 +870,9 @@ export default function App() {
   // シンクロモード設定
   const [singleStickModeSetting, setSingleStickModeSetting] = useState<'manual' | 'always_on' | 'always_off'>(() => getSaveData().singleStickModeSetting);
   const [isSingleStick, setIsSingleStick] = useState(false);
+
+  // プレイヤースキン設定
+  const [playerSkinSetting, setPlayerSkinSetting] = useState<'default' | 'sphere' | 'crystal' | 'armor' | 'satellite'>(() => getSaveData().playerSkinSetting ?? 'default');
 
   useEffect(() => {
     if (singleStickModeSetting === 'always_on') {
@@ -2755,6 +2761,7 @@ export default function App() {
                     playSound('ui_select');
                   }
                 }}
+                playerSkinSetting={playerSkinSetting}
               />
             </Suspense>
           </Canvas>
@@ -3434,8 +3441,8 @@ export default function App() {
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '24px', rowGap: '6px' }}>
                             {[
                               { label: '最大HP', value: currentStatsData.health.toFixed(1) }, { label: '最大SP', value: currentStatsData.maxSp.toFixed(1) },
-                              { label: '近接攻撃力', value: currentStatsData.meleeAttackPower.toFixed(1) }, { label: '近接攻撃回数', value: `${(1 / Math.max(0.01, currentStatsData.meleeAttackInterval)).toFixed(2)}回/秒` },
-                              { label: '遠隔攻撃力', value: currentStatsData.rangedAttackPower.toFixed(1) }, { label: '遠隔攻撃回数', value: `${(1 / Math.max(0.01, currentStatsData.rangedAttackInterval)).toFixed(2)}回/秒` },
+                              { label: '近接攻撃力', value: currentStatsData.meleeAttackPower.toFixed(1) }, { label: '近接攻撃回数', value: `${(1 / Math.max(0.01, currentStatsData.meleeAttackInterval)).toFixed(2)}/sec` },
+                              { label: '遠隔攻撃力', value: currentStatsData.rangedAttackPower.toFixed(1) }, { label: '遠隔攻撃回数', value: `${(1 / Math.max(0.01, currentStatsData.rangedAttackInterval)).toFixed(2)}/sec` },
                               // 【修正】会心率を防御力より前に移動
                               { label: '魔力', value: currentStatsData.magicPower.toFixed(1) }, { label: '会心率', value: `${currentStatsData.critChance.toFixed(1)}%` },
                               { label: '防御力', value: currentStatsData.defense.toFixed(1) }, { label: 'パリィ発生率', value: `${currentStatsData.evasion.toFixed(1)}%` },
@@ -3676,6 +3683,8 @@ export default function App() {
           isGamepadActive={activeDevice !== 'keyboard'}
           singleStickModeSetting={singleStickModeSetting}
           setSingleStickModeSetting={setSingleStickModeSetting}
+          playerSkinSetting={playerSkinSetting}
+          setPlayerSkinSetting={setPlayerSkinSetting}
         />
       )}
 
@@ -3683,7 +3692,7 @@ export default function App() {
 
       {/* バージョン表示 */}
       <div style={{ position: 'fixed', bottom: '10px', left: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', pointerEvents: 'none', zIndex: 9999, fontFamily: 'Consolas, monospace' }}>
-        Ver.0.1.0
+        Ver.1.0.0.0
       </div>
     </>
   );

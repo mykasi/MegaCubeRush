@@ -47,7 +47,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [controlSubTab, setControlSubTab] = useState<'game' | 'menu'>('game');
   const [elementSubTab, setElementSubTab] = useState<'enchant' | 'status'>('enchant');
-  const [systemSubTab, setSystemSubTab] = useState<'action' | 'core' | 'battle' | 'stats' | 'hud'>('core');
+  const [systemSubTab, setSystemSubTab] = useState<'action' | 'core' | 'battle' | 'stats' | 'hud'>('action');
   const [itemSubTab, setItemSubTab] = useState<'drops' | 'resources' | 'rarity' | 'affixes' | 'equip'>('drops');
 
   const switchTab = useCallback((dir: number) => {

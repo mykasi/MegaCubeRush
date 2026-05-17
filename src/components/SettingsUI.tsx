@@ -21,16 +21,20 @@ interface SettingsUIProps {
   // ※コード上の singleStickModeSetting は「シンクロモード」の設定に対応します
   singleStickModeSetting: 'manual' | 'always_on' | 'always_off';
   setSingleStickModeSetting: (v: 'manual' | 'always_on' | 'always_off') => void;
+  playerSkinSetting: 'default' | 'sphere' | 'crystal' | 'armor' | 'satellite';
+  setPlayerSkinSetting: (v: 'default' | 'sphere' | 'crystal' | 'armor' | 'satellite') => void;
 }
 
 export const SettingsUI: React.FC<SettingsUIProps> = ({
   onClose, bgmVolume, seVolume, masterVolume, setBgmVolume, setSeVolume, setMasterVolume,
   showInventoryMainAll, showInventorySubAll, inventoryDisplayLimit,
   setShowInventoryMainAll, setShowInventorySubAll, setInventoryDisplayLimit,
-  isGamepadActive, singleStickModeSetting, setSingleStickModeSetting
+  isGamepadActive, singleStickModeSetting, setSingleStickModeSetting,
+  playerSkinSetting, setPlayerSkinSetting
 }) => {
   const [activeTab, setActiveTab] = useState<'audio' | 'inventory' | 'control'>('audio');
   const [activeIndex, setActiveIndex] = useState(0); 
+  const skins: Array<'default' | 'sphere' | 'crystal' | 'armor' | 'satellite'> = ['default', 'sphere', 'crystal', 'armor', 'satellite']; 
   const [isBgmMuted, setIsBgmMuted] = useState(bgmVolume === 0);
   const [isSeMuted, setIsSeMuted] = useState(seVolume === 0);
   const [isMasterMuted, setIsMasterMuted] = useState(masterVolume === 0);
@@ -45,7 +49,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
   // 各タブの項目数
   const AUDIO_ITEMS = 5;
   const INVENTORY_ITEMS = 5;
-  const CONTROL_ITEMS = 2;
+  const CONTROL_ITEMS = 3;
   const menuCount = activeTab === 'audio' ? AUDIO_ITEMS : (activeTab === 'inventory' ? INVENTORY_ITEMS : CONTROL_ITEMS);
 
   // カーソル移動用のタメとリピート管理
@@ -132,6 +136,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
     data.inventoryDisplayLimit = inventoryDisplayLimit;
     // ※コード上の singleStickModeSetting = シンクロモード設定
     data.singleStickModeSetting = singleStickModeSetting;
+    data.playerSkinSetting = playerSkinSetting;
     saveGameData(data);
 
     playSound('ui_cancel');
@@ -264,6 +269,12 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               if (activeIndex === 2) { setInventoryDisplayLimit(Math.max(12, inventoryDisplayLimit - 1)); playSound('ui_move'); }
             } else if (activeTab === 'control') {
               if (activeIndex === 0) { setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_off' : (singleStickModeSetting === 'always_off' ? 'always_on' : 'manual')); playSound('ui_move'); }
+              if (activeIndex === 1) {
+                const currentIdx = skins.indexOf(playerSkinSetting);
+                const nextIdx = (currentIdx - 1 + skins.length) % skins.length;
+                setPlayerSkinSetting(skins[nextIdx]);
+                playSound('ui_move');
+              }
             }
           }
           nextLeftTime.current = now + REPEAT_DELAY;
@@ -299,6 +310,12 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               if (activeIndex === 2) { setInventoryDisplayLimit(Math.min(120, inventoryDisplayLimit + 1)); playSound('ui_move'); }
             } else if (activeTab === 'control') {
               if (activeIndex === 0) { setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_move'); }
+              if (activeIndex === 1) {
+                const currentIdx = skins.indexOf(playerSkinSetting);
+                const nextIdx = (currentIdx + 1) % skins.length;
+                setPlayerSkinSetting(skins[nextIdx]);
+                playSound('ui_move');
+              }
             }
           }
           nextRightTime.current = now + REPEAT_DELAY;
@@ -348,6 +365,12 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               else if (activeIndex === 1) { setShowInventorySubAll(!showInventorySubAll); playSound('ui_select'); }
             } else if (activeTab === 'control') {
               if (activeIndex === 0) { setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }
+              if (activeIndex === 1) {
+                const currentIdx = skins.indexOf(playerSkinSetting);
+                const nextIdx = (currentIdx + 1) % skins.length;
+                setPlayerSkinSetting(skins[nextIdx]);
+                playSound('ui_select');
+              }
             }
           }
         }
@@ -371,7 +394,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
     poll, activeIndex, activeTab, bgmVolume, seVolume, masterVolume, isBgmMuted, isSeMuted, isMasterMuted,
     showInventoryMainAll, showInventorySubAll, inventoryDisplayLimit, showResetConfirm, menuCount,
     setBgmVolume, setSeVolume, setMasterVolume, setShowInventoryMainAll, setShowInventorySubAll, setInventoryDisplayLimit,
-    singleStickModeSetting, setSingleStickModeSetting
+    singleStickModeSetting, setSingleStickModeSetting, playerSkinSetting, setPlayerSkinSetting
   ]);
 
   return (
@@ -415,7 +438,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               transition: 'all 0.2s'
             }}
           >
-            🎮 CONTROL
+            🎮 PLAYER
           </div>
         </div>
 
@@ -468,15 +491,55 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
             <>
               <div className={`settings-item ${activeIndex === 0 ? 'active' : ''}`} onMouseDown={() => setActiveIndex(0)}>
                 <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setShowInventoryMainAll(!showInventoryMainAll); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>インベントリ大項目 「全て」タブ表示</div>
-                <div className="settings-control">
-                  <span className="settings-value" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setShowInventoryMainAll(!showInventoryMainAll); playSound('ui_select'); }} style={{ cursor: 'pointer', width: '100%', textAlign: 'right' }}>{showInventoryMainAll ? 'ON' : 'OFF'}</span>
+                <div className="settings-control" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', marginRight: 'auto', gap: '1px' }}>
+                    {[0, 1].map((idx) => {
+                      const isCurrent = (showInventoryMainAll ? 1 : 0) === idx;
+                      return (
+                        <span 
+                          key={idx}
+                          onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setShowInventoryMainAll(idx === 1); playSound('ui_select'); }}
+                          style={{ cursor: 'pointer', color: '#00e5ff', fontSize: '14px', padding: '2px 2px', userSelect: 'none' }}
+                        >
+                          {isCurrent ? '■' : '□'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span 
+                    className="settings-value" 
+                    onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setShowInventoryMainAll(!showInventoryMainAll); playSound('ui_select'); }}
+                    style={{ cursor: 'pointer', textAlign: 'right', minWidth: '80px' }}
+                  >
+                    {showInventoryMainAll ? 'ON' : 'OFF'}
+                  </span>
                 </div>
               </div>
 
               <div className={`settings-item ${activeIndex === 1 ? 'active' : ''}`} onMouseDown={() => setActiveIndex(1)}>
                 <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); setShowInventorySubAll(!showInventorySubAll); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>インベントリ小項目 「ALL」タブ表示</div>
-                <div className="settings-control">
-                  <span className="settings-value" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); setShowInventorySubAll(!showInventorySubAll); playSound('ui_select'); }} style={{ cursor: 'pointer', width: '100%', textAlign: 'right' }}>{showInventorySubAll ? 'ON' : 'OFF'}</span>
+                <div className="settings-control" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', marginRight: 'auto', gap: '1px' }}>
+                    {[0, 1].map((idx) => {
+                      const isCurrent = (showInventorySubAll ? 1 : 0) === idx;
+                      return (
+                        <span 
+                          key={idx}
+                          onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); setShowInventorySubAll(idx === 1); playSound('ui_select'); }}
+                          style={{ cursor: 'pointer', color: '#00e5ff', fontSize: '14px', padding: '2px 2px', userSelect: 'none' }}
+                        >
+                          {isCurrent ? '■' : '□'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span 
+                    className="settings-value" 
+                    onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); setShowInventorySubAll(!showInventorySubAll); playSound('ui_select'); }}
+                    style={{ cursor: 'pointer', textAlign: 'right', minWidth: '80px' }}
+                  >
+                    {showInventorySubAll ? 'ON' : 'OFF'}
+                  </span>
                 </div>
               </div>
 
@@ -502,9 +565,57 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               <div className={`settings-item ${activeIndex === 0 ? 'active' : ''}`} onMouseDown={() => setActiveIndex(0)}>
                 {/* ※コード上の singleStickModeSetting = シンクロモード設定 */}
                 <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>シンクロモード</div>
-                <div className="settings-control">
-                  <span className="settings-value" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }} style={{ cursor: 'pointer', width: '100%', textAlign: 'right', color: '#00e5ff' }}>
+                <div className="settings-control" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', marginRight: 'auto', gap: '1px' }}>
+                    {(['manual', 'always_on', 'always_off'] as const).map((mode, idx) => {
+                      const isCurrent = singleStickModeSetting === mode;
+                      return (
+                        <span 
+                          key={mode}
+                          onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(mode); playSound('ui_select'); }}
+                          style={{ cursor: 'pointer', color: '#00e5ff', fontSize: '14px', padding: '2px 2px', userSelect: 'none' }}
+                        >
+                          {isCurrent ? '■' : '□'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span 
+                    className="settings-value" 
+                    onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(0); setSingleStickModeSetting(singleStickModeSetting === 'manual' ? 'always_on' : (singleStickModeSetting === 'always_on' ? 'always_off' : 'manual')); playSound('ui_select'); }}
+                    style={{ cursor: 'pointer', textAlign: 'right', color: '#00e5ff', minWidth: '150px' }}
+                  >
                     {singleStickModeSetting === 'manual' ? 'マニュアル' : (singleStickModeSetting === 'always_on' ? '常時ON' : '常時OFF')}
+                  </span>
+                </div>
+              </div>
+
+              <div className={`settings-item ${activeIndex === 1 ? 'active' : ''}`} onMouseDown={() => setActiveIndex(1)}>
+                <div className="settings-label" onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); const nextIdx = (skins.indexOf(playerSkinSetting) + 1) % skins.length; setPlayerSkinSetting(skins[nextIdx]); playSound('ui_select'); }} style={{ cursor: 'pointer' }}>プレイヤースキン</div>
+                <div className="settings-control" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', marginRight: 'auto', gap: '1px' }}>
+                    {skins.map((skinName, idx) => {
+                      const isCurrent = playerSkinSetting === skinName;
+                      return (
+                        <span 
+                          key={skinName}
+                          onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); setPlayerSkinSetting(skinName); playSound('ui_select'); }}
+                          style={{ cursor: 'pointer', color: '#00e5ff', fontSize: '14px', padding: '2px 2px', userSelect: 'none' }}
+                        >
+                          {isCurrent ? '■' : '□'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span 
+                    className="settings-value" 
+                    onMouseDown={(e) => { e.stopPropagation(); setActiveIndex(1); const nextIdx = (skins.indexOf(playerSkinSetting) + 1) % skins.length; setPlayerSkinSetting(skins[nextIdx]); playSound('ui_select'); }}
+                    style={{ cursor: 'pointer', color: '#00e5ff', textAlign: 'right', minWidth: '150px' }}
+                  >
+                    {playerSkinSetting === 'default' ? 'プロトタイプ' : 
+                     (playerSkinSetting === 'sphere' ? 'サイバー・スフィア' : 
+                      (playerSkinSetting === 'crystal' ? 'ネオ・クリスタル' : 
+                       (playerSkinSetting === 'armor' ? 'ガーディアン・アーマー' : 'サテライト・エナジー')))}
                   </span>
                 </div>
               </div>

@@ -85,6 +85,7 @@ interface PlayerProps {
   // ※コード上の isSingleStick は「シンクロモード」を指します
   isSingleStick?: boolean;
   onToggleSingleStick?: () => void;
+  skinSetting?: 'default' | 'sphere' | 'crystal' | 'armor' | 'satellite';
 }
 
 export const Player = memo(function Player({
@@ -99,6 +100,7 @@ export const Player = memo(function Player({
   spawnStartTime = 0,
   isSingleStick = false,
   onToggleSingleStick,
+  skinSetting = 'default'
 }: PlayerProps) {
   const groupRef = useRef<Group>(null);
   const keys = useKeyboard();
@@ -152,6 +154,15 @@ export const Player = memo(function Player({
   
   const barrierCooldownTimerRef = useRef(0);
   const cooldownAuraRef = useRef<import('three').Mesh>(null);
+
+  // プレイヤースキン用 Ref 定義
+  const visualGroupRef = useRef<import('three').Group>(null);
+  const ring1Ref = useRef<import('three').Mesh>(null);
+  const ring2Ref = useRef<import('three').Mesh>(null);
+  const sat1Ref = useRef<import('three').Mesh>(null);
+  const sat2Ref = useRef<import('three').Mesh>(null);
+  const sat3Ref = useRef<import('three').Mesh>(null);
+  const sat4Ref = useRef<import('three').Mesh>(null);
 
   useEffect(() => {
     if (isPaused || isInventoryOpen || isGameOver) {
@@ -998,6 +1009,47 @@ export const Player = memo(function Player({
     playerPosRef.y = groupRef.current.position.y;
     playerPosRef.z = groupRef.current.position.z;
     onPositionUpdate?.(groupRef.current.position);
+
+    // スキン毎のアニメーション制御
+    if (visualGroupRef.current) {
+      const time = _state.clock.getElapsedTime();
+      if (skinSetting === 'sphere') {
+        visualGroupRef.current.position.y = Math.sin(time * 3.5) * 0.12;
+        visualGroupRef.current.rotation.y = 0;
+        if (ring1Ref.current) ring1Ref.current.rotation.x = time * 1.5;
+        if (ring2Ref.current) ring2Ref.current.rotation.z = time * 1.0;
+      } else if (skinSetting === 'crystal') {
+        visualGroupRef.current.position.y = Math.sin(time * 1.8) * 0.08;
+        visualGroupRef.current.rotation.y = time * 0.3; // 神秘的な自動回転
+      } else if (skinSetting === 'satellite') {
+        visualGroupRef.current.position.y = Math.sin(time * 2.5) * 0.06;
+        visualGroupRef.current.rotation.y = 0;
+        
+        // 衛星キューブ 4点の公転・自転
+        const r = 0.8;
+        const speed = 2.0;
+        if (sat1Ref.current) {
+          sat1Ref.current.position.set(Math.cos(time * speed) * r, 0, Math.sin(time * speed) * r);
+          sat1Ref.current.rotation.y = time * 2.0;
+        }
+        if (sat2Ref.current) {
+          sat2Ref.current.position.set(Math.cos(time * speed + Math.PI / 2) * r, Math.sin(time * 3) * 0.12, Math.sin(time * speed + Math.PI / 2) * r);
+          sat2Ref.current.rotation.x = time * 1.5;
+        }
+        if (sat3Ref.current) {
+          sat3Ref.current.position.set(Math.cos(time * speed + Math.PI) * r, 0, Math.sin(time * speed + Math.PI) * r);
+          sat3Ref.current.rotation.y = -time * 2.0;
+        }
+        if (sat4Ref.current) {
+          sat4Ref.current.position.set(Math.cos(time * speed + Math.PI * 1.5) * r, Math.sin(time * 3 + Math.PI) * 0.12, Math.sin(time * speed + Math.PI * 1.5) * r);
+          sat4Ref.current.rotation.z = time * 1.5;
+        }
+      } else {
+        // default / armor
+        visualGroupRef.current.position.y = 0;
+        visualGroupRef.current.rotation.y = 0;
+      }
+    }
   });
 
   const ratio = maxHp > 0 ? hp / maxHp : 0;
@@ -1027,20 +1079,131 @@ export const Player = memo(function Player({
           </div>
         </Html>
       )}
-      <mesh castShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial ref={bodyMatRef} color="#7c4dff" emissive="#4a148c" emissiveIntensity={0.3} roughness={0.4} metalness={0.6} transparent opacity={0.4} />
-      </mesh>
-      <mesh castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color={coreColor} emissive={coreColor} emissiveIntensity={2.0} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.1, 0.65]} castShadow>
-        <boxGeometry args={[0.2, 0.2, 0.5]} />
-        <meshStandardMaterial color="#b388ff" emissive="#7c4dff" emissiveIntensity={0.6} roughness={0.3} metalness={0.7} transparent opacity={0.4} />
-      </mesh>
-      <mesh position={[-0.2, 0.2, 0.51]}><sphereGeometry args={[0.1, 8, 6]} /><meshStandardMaterial color="#e0ff00" emissive="#e0ff00" emissiveIntensity={1.5} toneMapped={false} /></mesh>
-      <mesh position={[0.2, 0.2, 0.51]}><sphereGeometry args={[0.1, 8, 6]} /><meshStandardMaterial color="#e0ff00" emissive="#e0ff00" emissiveIntensity={1.5} toneMapped={false} /></mesh>
+      {/* プレイヤースキン毎の描画処理（当たり判定やステータスには一切干渉しない） */}
+      <group ref={visualGroupRef}>
+        {/* 中央の白いコアキューブ：すべてのスキンで共通に描画される（エンチャントに応じて輝く） */}
+        <mesh castShadow>
+          <boxGeometry args={[0.5, 0.5, 0.5]} />
+          <meshStandardMaterial color={coreColor} emissive={coreColor} emissiveIntensity={2.0} toneMapped={false} />
+        </mesh>
+
+        {/* 1. プロトタイプスキン */}
+        {skinSetting === 'default' && (
+          <>
+            <mesh castShadow>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial ref={bodyMatRef} color="#7c4dff" emissive="#4a148c" emissiveIntensity={0.3} roughness={0.4} metalness={0.6} transparent opacity={0.4} />
+            </mesh>
+            <mesh position={[0, 0.1, 0.65]} castShadow>
+              <boxGeometry args={[0.2, 0.2, 0.5]} />
+              <meshStandardMaterial color="#b388ff" emissive="#7c4dff" emissiveIntensity={0.6} roughness={0.3} metalness={0.7} transparent opacity={0.4} />
+            </mesh>
+            <mesh position={[-0.2, 0.2, 0.51]}><sphereGeometry args={[0.1, 8, 6]} /><meshStandardMaterial color="#e0ff00" emissive="#e0ff00" emissiveIntensity={1.5} toneMapped={false} /></mesh>
+            <mesh position={[0.2, 0.2, 0.51]}><sphereGeometry args={[0.1, 8, 6]} /><meshStandardMaterial color="#e0ff00" emissive="#e0ff00" emissiveIntensity={1.5} toneMapped={false} /></mesh>
+          </>
+        )}
+
+        {/* 2. サイバー・スフィアスキン */}
+        {skinSetting === 'sphere' && (
+          <>
+            {/* 球体型アウター */}
+            <mesh castShadow>
+              <sphereGeometry args={[0.55, 32, 32]} />
+              <meshStandardMaterial color="#00e5ff" emissive="#006064" emissiveIntensity={0.4} roughness={0.2} metalness={0.8} transparent opacity={0.4} />
+            </mesh>
+            {/* ジャイロリング1 */}
+            <mesh ref={ring1Ref} castShadow>
+              <torusGeometry args={[0.7, 0.03, 8, 48]} />
+              <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={1.2} toneMapped={false} />
+            </mesh>
+            {/* ジャイロリング2 */}
+            <mesh ref={ring2Ref} castShadow rotation={[0, Math.PI / 2, 0]}>
+              <torusGeometry args={[0.75, 0.03, 8, 48]} />
+              <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={1.2} toneMapped={false} />
+            </mesh>
+          </>
+        )}
+
+        {/* 3. ネオ・クリスタルスキン */}
+        {skinSetting === 'crystal' && (
+          <>
+            {/* 八面体クリスタルアウター */}
+            <mesh castShadow>
+              <octahedronGeometry args={[0.62, 0]} />
+              <meshStandardMaterial color="#b388ff" emissive="#4a148c" emissiveIntensity={0.5} roughness={0.1} metalness={0.9} transparent opacity={0.35} />
+            </mesh>
+            {/* 上部クリスタル */}
+            <mesh position={[0, 0.75, 0]} castShadow scale={[0.3, 0.6, 0.3]} rotation={[0, 0, 0]}>
+              <octahedronGeometry args={[0.5, 0]} />
+              <meshStandardMaterial color="#ff00ff" emissive="#ff00ff" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+            {/* 下部クリスタル */}
+            <mesh position={[0, -0.75, 0]} castShadow scale={[0.3, 0.6, 0.3]} rotation={[0, 0, 0]}>
+              <octahedronGeometry args={[0.5, 0]} />
+              <meshStandardMaterial color="#ff00ff" emissive="#ff00ff" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+          </>
+        )}
+
+        {/* 4. ガーディアン・アーマースキン */}
+        {skinSetting === 'armor' && (
+          <>
+            {/* 左装甲プレート */}
+            <mesh position={[-0.55, 0, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.9, 0.9]} />
+              <meshStandardMaterial color="#78909c" emissive="#263238" emissiveIntensity={0.2} roughness={0.5} metalness={0.7} />
+            </mesh>
+            {/* 右装甲プレート */}
+            <mesh position={[0.55, 0, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.9, 0.9]} />
+              <meshStandardMaterial color="#78909c" emissive="#263238" emissiveIntensity={0.2} roughness={0.5} metalness={0.7} />
+            </mesh>
+            {/* 上装甲プレート */}
+            <mesh position={[0, 0.55, 0]} castShadow>
+              <boxGeometry args={[0.9, 0.12, 0.9]} />
+              <meshStandardMaterial color="#78909c" emissive="#263238" emissiveIntensity={0.2} roughness={0.5} metalness={0.7} />
+            </mesh>
+            {/* 下装甲プレート */}
+            <mesh position={[0, -0.55, 0]} castShadow>
+              <boxGeometry args={[0.9, 0.12, 0.9]} />
+              <meshStandardMaterial color="#78909c" emissive="#263238" emissiveIntensity={0.2} roughness={0.5} metalness={0.7} />
+            </mesh>
+            {/* ヘビーバイザー */}
+            <mesh position={[0, 0.15, 0.55]} castShadow>
+              <boxGeometry args={[0.6, 0.15, 0.1]} />
+              <meshStandardMaterial color="#ff3d00" emissive="#ff3d00" emissiveIntensity={1.5} toneMapped={false} />
+            </mesh>
+          </>
+        )}
+
+        {/* 5. サテライト・エナジースキン */}
+        {skinSetting === 'satellite' && (
+          <>
+            {/* アウターボディアシストコア */}
+            <mesh castShadow>
+              <boxGeometry args={[0.7, 0.7, 0.7]} />
+              <meshStandardMaterial color="#e9d5ff" emissive="#c084fc" emissiveIntensity={0.3} roughness={0.3} metalness={0.8} transparent opacity={0.3} />
+            </mesh>
+            {/* 衛星キューブ 4点 */}
+            <mesh ref={sat1Ref} castShadow>
+              <boxGeometry args={[0.2, 0.2, 0.2]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffc107" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+            <mesh ref={sat2Ref} castShadow>
+              <boxGeometry args={[0.2, 0.2, 0.2]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffc107" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+            <mesh ref={sat3Ref} castShadow>
+              <boxGeometry args={[0.2, 0.2, 0.2]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffc107" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+            <mesh ref={sat4Ref} castShadow>
+              <boxGeometry args={[0.2, 0.2, 0.2]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffc107" emissiveIntensity={1.0} toneMapped={false} />
+            </mesh>
+          </>
+        )}
+      </group>
       <mesh ref={barrierMeshRef} visible={false}><sphereGeometry args={[1.2, 16, 16]} /><meshStandardMaterial color="#00ffff" transparent opacity={0.3} depthWrite={false} emissive="#00ffff" emissiveIntensity={0.5} /></mesh>
       <mesh ref={boostAuraRef} visible={false} position={[0, -0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.8, 1.2, 32]} /><meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={2.0} transparent opacity={0.8} side={2} /></mesh>
       <mesh ref={dodgeAuraRef} visible={false} position={[0, -0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.5, 0.65, 32]} /><meshStandardMaterial color="#00FFFF" emissive="#00FFFF" emissiveIntensity={4.0} transparent opacity={1.0} side={2} /></mesh>
