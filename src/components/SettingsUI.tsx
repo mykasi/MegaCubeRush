@@ -482,7 +482,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               </div>
 
               <div className={`settings-item ${activeIndex === 3 ? 'active' : ''}`} onMouseDown={() => { setActiveIndex(3); setResetConfirmIndex(1); setShowResetConfirm(true); playSound('ui_select'); }}>
-                <div className="settings-label" style={{ textAlign: 'center', width: '100%', cursor: 'pointer', color: '#ff5252' }}>音量設定をデフォルトに戻す</div>
+                <div className="settings-label latemin-font" style={{ textAlign: 'center', width: '100%', cursor: 'pointer', color: '#ff5252' }}>音量設定をデフォルトに戻す</div>
               </div>
             </>
           )}
@@ -555,7 +555,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
               </div>
 
               <div className={`settings-item ${activeIndex === 3 ? 'active' : ''}`} onMouseDown={() => { setActiveIndex(3); setResetConfirmIndex(1); setShowResetConfirm(true); playSound('ui_select'); }}>
-                <div className="settings-label" style={{ textAlign: 'center', width: '100%', cursor: 'pointer', color: '#ff5252' }}>インベントリ設定をデフォルトに戻す</div>
+                <div className="settings-label latemin-font" style={{ textAlign: 'center', width: '100%', cursor: 'pointer', color: '#ff5252' }}>インベントリ設定をデフォルトに戻す</div>
               </div>
             </>
           )}
@@ -623,7 +623,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
           )}
 
           <div className={`settings-item ${activeIndex === menuCount - 1 ? 'active' : ''}`} onMouseDown={handleClose}>
-            <div className="settings-label" style={{ textAlign: 'center', width: '100%', cursor: 'pointer' }}>戻る</div>
+            <div className="settings-label latemin-font" style={{ textAlign: 'center', width: '100%', cursor: 'pointer' }}>戻る</div>
           </div>
         </div>
 
@@ -679,7 +679,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
                   transition: 'all 0.2s', transform: resetConfirmIndex === 0 ? 'scale(1.05)' : 'scale(1)'
                 }}
               >
-                <div style={{ color: resetConfirmIndex === 0 ? '#ff5252' : '#888', fontWeight: 'bold', fontSize: '18px' }}>はい</div>
+                <div className="latemin-font" style={{ color: resetConfirmIndex === 0 ? '#ff5252' : '#888', fontWeight: 'bold', fontSize: '18px' }}>はい</div>
               </div>
               
               <div 
@@ -692,7 +692,7 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({
                   transition: 'all 0.2s', transform: resetConfirmIndex === 1 ? 'scale(1.05)' : 'scale(1)'
                 }}
               >
-                <div style={{ color: resetConfirmIndex === 1 ? '#ff5252' : '#888', fontWeight: 'bold', fontSize: '18px' }}>いいえ</div>
+                <div className="latemin-font" style={{ color: resetConfirmIndex === 1 ? '#ff5252' : '#888', fontWeight: 'bold', fontSize: '18px' }}>いいえ</div>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>

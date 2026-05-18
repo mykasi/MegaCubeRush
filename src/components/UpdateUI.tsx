@@ -47,7 +47,7 @@ export const UpdateUI: React.FC<UpdateUIProps> = ({ onClose, isGamepadActive = f
 
     const parts = desc.split(/(\[HEAL_BTN\]|\[MAGNET_BTN\])/);
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px', verticalAlign: 'middle' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px', verticalAlign: 'middle', fontFamily: 'sans-serif' }}>
         {parts.map((part, i) => {
           if (part === '[HEAL_BTN]') {
             return isGamepadActive ? (
@@ -533,7 +533,7 @@ export const UpdateUI: React.FC<UpdateUIProps> = ({ onClose, isGamepadActive = f
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: displayCurrency === 'hyper' ? '#d500f9' : '#fff' }}>
                   {item.name} <span style={{ color: '#00e5ff', marginLeft: '10px' }}>Lv.{lv}/{item.maxLevel}</span>
                 </div>
-                <div style={{ color: '#aaa', fontSize: '14px', marginTop: '5px', display: 'flex', alignItems: 'center', minHeight: '1.2em' }}>{renderDescription(item.desc)}</div>
+                <div style={{ color: '#aaa', fontSize: '14px', marginTop: '5px', display: 'flex', alignItems: 'center', minHeight: '1.2em', fontFamily: 'sans-serif' }}>{renderDescription(item.desc)}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'flex-end', flex: 1 }}>
                 {!isMax ? (

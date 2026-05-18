@@ -596,6 +596,7 @@ const StatusHUD = memo(function StatusHUD({
   stats,
   isRewardOpen,
   isPaused,
+  isInventoryOpen = false, // 追加
   acquiredRewards,
   activeEnchant,
   healUses,
@@ -605,6 +606,7 @@ const StatusHUD = memo(function StatusHUD({
   stats: PlayerStats;
   isRewardOpen?: boolean;
   isPaused?: boolean;
+  isInventoryOpen?: boolean; // 追加
   acquiredRewards: any[];
   activeEnchant: string;
   healUses: number;
@@ -661,7 +663,7 @@ const StatusHUD = memo(function StatusHUD({
       bottom: '20px',
       left: '20px',
       width: '320px', /* ここで横幅を固定！ */
-      zIndex: (isRewardOpen || isPaused) ? 100 : 40,
+      zIndex: isInventoryOpen ? 20 : ((isRewardOpen || isPaused) ? 100 : 40),
       pointerEvents: 'none',
       display: 'flex',
       flexDirection: 'column'
@@ -2487,7 +2489,7 @@ export default function App() {
                 minHeight: '24px',
                 color: '#aaa',
                 fontSize: '14px',
-                fontFamily: 'GenEiLateMin, serif',
+                fontFamily: 'sans-serif',
                 textAlign: 'center',
                 textShadow: '0 0 6px rgba(255,255,255,0.2)',
                 letterSpacing: '1px',
@@ -2893,12 +2895,13 @@ export default function App() {
             </div>
           </div>
 
-          <ExpBar onLevelUpSync={() => syncStats({ ...equipmentRef.current })} isRewardOpen={showRewardScreen || isPaused} />
-          <HpBar isRewardOpen={showRewardScreen || isPaused} />
+          <ExpBar onLevelUpSync={() => syncStats({ ...equipmentRef.current })} isRewardOpen={isInventoryOpen ? false : (showRewardScreen || isPaused)} />
+          <HpBar isRewardOpen={isInventoryOpen ? false : (showRewardScreen || isPaused)} />
           <StatusHUD
             stats={computedStatsUI}
             isRewardOpen={showRewardScreen}
             isPaused={isPaused}
+            isInventoryOpen={isInventoryOpen}
             acquiredRewards={acquiredRewards}
             activeEnchant={activeEnchant}
             healUses={healUses}
@@ -2910,7 +2913,7 @@ export default function App() {
           <BossUI isPaused={isPaused || isGameOver} />
 
           {!isTitleScreen && !isGameOver && (
-            <div style={{ position: 'fixed', top: '30px', right: '20px', zIndex: (showRewardScreen || isPaused) ? 100 : 40, color: '#fff', fontSize: '18px', textShadow: '0 0 8px rgba(0,0,0,0.8)', pointerEvents: 'none', textAlign: 'right' }}>
+            <div style={{ position: 'fixed', top: '30px', right: '20px', zIndex: isInventoryOpen ? 40 : ((showRewardScreen || isPaused) ? 100 : 40), color: '#fff', fontSize: '18px', textShadow: '0 0 8px rgba(0,0,0,0.8)', pointerEvents: 'none', textAlign: 'right' }}>
               {/* WAVE表示 (fontSize指定を削除し、親の18pxを継承させる) */}
               <div ref={waveTextRef} style={{ color: '#a78bfa', marginBottom: '4px' }}>
                 <span className="impact-font">🚩 WAVE:</span> 1
@@ -3003,7 +3006,7 @@ export default function App() {
               showInventoryMainAll={showInventoryMainAll}
               showInventorySubAll={showInventorySubAll}
               inventoryDisplayLimit={inventoryDisplayLimit}
-              onClose={() => { setIsInventoryOpen(false); playSound('inventory_close'); }}
+              onClose={handleToggleInventory}
               onEquip={handleEquip}
               onUnequip={handleUnequip}
               isGamepadActive={isGamepadActive}
@@ -3733,7 +3736,7 @@ export default function App() {
 
       {/* バージョン表示 */}
       <div style={{ position: 'fixed', bottom: '10px', left: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', pointerEvents: 'none', zIndex: 9999, fontFamily: 'Consolas, monospace' }}>
-        Ver.1.1.0
+        Ver.1.2.0
       </div>
     </>
   );

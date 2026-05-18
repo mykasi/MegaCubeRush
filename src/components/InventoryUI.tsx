@@ -153,7 +153,7 @@ export const getItemCategoryInfo = (baseItem: any) => {
   const slot = baseItem.slot;
   const getSlotName = (s: EquipSlot) => SLOT_LABELS[s]?.label || s;
   const isWeapon = slot === EquipSlot.MeleeWeapon || slot === EquipSlot.RangedWeapon;
-  
+
   if (!isWeapon) {
     return { genreName: getSlotName(slot), badge: '' };
   }
@@ -290,8 +290,8 @@ function ItemCard({
 function ItemDetailPanel({ item }: { item: GeneratedItem | null }) {
   if (!item) {
     return (
-      <div className="inv-item-detail-empty">
-        <p>アイテムを選択してください</p>
+      <div className="inv-item-detail-empty" style={{ fontFamily: 'sans-serif' }}>
+        <p>アイテムを選択してください。</p>
       </div>
     );
   }
@@ -304,10 +304,10 @@ function ItemDetailPanel({ item }: { item: GeneratedItem | null }) {
   const isLevelDisabled = currentLevel < (item.itemLevel || 1);
 
   return (
-    <div className="inv-item-detail-panel" style={{ borderColor: config.color }}>
+    <div className="inv-item-detail-panel" style={{ borderColor: config.color, fontFamily: 'sans-serif' }}>
       <div className="inv-item-detail-header">
         <span className="inv-item-slot">{slot.emoji}</span>
-        <span className="inv-item-name" style={{ color: config.color, textShadow: `0 0 10px ${config.color}AA` }}>
+        <span className="inv-item-name" style={{ color: config.color, textShadow: `0 0 10px ${config.color}AA`, fontFamily: 'GenEiLateMin, serif' }}>
           {displayName}
         </span>
       </div>
@@ -318,9 +318,9 @@ function ItemDetailPanel({ item }: { item: GeneratedItem | null }) {
           <span style={{ color: config.color, fontWeight: item.rarity === Rarity.Celestial ? 'bold' : 'normal' }}>
             {config.nameJa}
           </span>
-          <span 
-            className="inv-item-level" 
-            style={{ 
+          <span
+            className="inv-item-level"
+            style={{
               color: isLevelDisabled ? '#ef4444' : undefined,
               fontWeight: isLevelDisabled ? 'bold' : undefined
             }}
@@ -328,7 +328,7 @@ function ItemDetailPanel({ item }: { item: GeneratedItem | null }) {
             {isLevelDisabled ? `必要Lv.${item.itemLevel}` : `Lv.${item.itemLevel || 1}`}
           </span>
         </div>
-        
+
         {/* 右側：スロット名（遠隔武器など） */}
         <span className="inv-item-slot-label">
           {(() => {
@@ -423,8 +423,8 @@ function EquipSlotCard({
     if (slot === EquipSlot.RangedWeapon) name = '遠隔武器(なし)';
 
     return (
-      <div className="equip-slot-empty" style={{ 
-        borderColor: isSelected ? '#fff' : '#333', 
+      <div className="equip-slot-empty" style={{
+        borderColor: isSelected ? '#fff' : '#333',
         boxShadow: isSelected ? '0 0 0 2px #fff' : 'none',
         height: '44px',
         display: 'flex',
@@ -464,36 +464,36 @@ function EquipSlotCard({
           {catInfo.badge}
         </div>
       )}
-          <div className="equip-slot-info" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div
-              className="equip-item-name"
-              style={{
-                color: config.color,
-                textShadow: 'none',
-                fontSize: '15px',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: 'none',
-                display: 'block',
-                width: '100%'
-              }}
-            >
-              {displayName}
-            </div>
-            
-            <div className="equip-slot-rarity" style={{ fontSize: '12px', color: '#888' }}>
-              <span style={{ color: config.color }}>{config.nameJa}</span>
-              <span style={{ marginLeft: '6px' }}>Lv.{item.itemLevel}</span>
-              
-              <span style={{ color: '#aaa', marginLeft: '12px' }}>
-                {item.baseItem.slot === EquipSlot.MeleeWeapon || item.baseItem.slot === EquipSlot.RangedWeapon
-                  ? `${catInfo.genreName}　${item.baseItem.nameJa}`
-                  : item.baseItem.nameJa}
-              </span>
-            </div>
-          </div>
+      <div className="equip-slot-info" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div
+          className="equip-item-name"
+          style={{
+            color: config.color,
+            textShadow: 'none',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 'none',
+            display: 'block',
+            width: '100%'
+          }}
+        >
+          {displayName}
+        </div>
+
+        <div className="equip-slot-rarity" style={{ fontSize: '12px', color: '#888', fontFamily: 'sans-serif' }}>
+          <span style={{ color: config.color }}>{config.nameJa}</span>
+          <span style={{ marginLeft: '6px' }}>Lv.{item.itemLevel}</span>
+
+          <span style={{ color: '#aaa', marginLeft: '12px' }}>
+            {item.baseItem.slot === EquipSlot.MeleeWeapon || item.baseItem.slot === EquipSlot.RangedWeapon
+              ? `${catInfo.genreName}　${item.baseItem.nameJa}`
+              : item.baseItem.nameJa}
+          </span>
+        </div>
+      </div>
       <span className="equip-slot-remove">✕</span>
     </div>
   );
@@ -521,8 +521,8 @@ function ComparePreview({
   if (!previewItem || !previewItem.baseItem) {
     return (
       <div className="compare-panel" style={{ marginTop: 0, height: '100%' }}>
-        <div className="compare-hint" style={{ fontSize: '13px' }}>
-          アイテムにカーソルを合わせると装備時のステータス変化を表示します
+        <div className="compare-hint" style={{ fontSize: '13px', fontFamily: 'sans-serif' }}>
+          アイテムにカーソルを合わせると装備時のステータス変化を表示します。
         </div>
       </div>
     );
@@ -542,7 +542,7 @@ function ComparePreview({
   const diffs = COMPARE_ROWS.map((r) => {
     const curVal = (currentStats[r.key] as number) || 0;
     const simVal = (simStats[r.key] as number) || 0;
-    
+
     // 表示用のAPS変換（Interval系の場合）
     const isInterval = r.key === 'meleeAttackInterval' || r.key === 'rangedAttackInterval';
     const cur = isInterval ? (1 / Math.max(0.01, curVal)) : curVal;
@@ -563,7 +563,7 @@ function ComparePreview({
   const isLevelPositive = levelDiff > 0;
   const isLevelNegative = levelDiff < 0;
   const levelAbsVal = Math.abs(levelDiff);
-  
+
   const hasAnyDiff = diffs.length > 0 || levelDiff !== 0;
   const slotInfo = getItemIcon(previewItem.baseItem, previewItem.baseItem.slot);
 
@@ -791,9 +791,9 @@ export const InventoryUI = memo(function InventoryUI({
   // マウスホバーの対象アイテム
   const previewItem = isGamepadActive
     ? (selectedIndex >= 0
-        ? (filteredItems[Math.min(selectedIndex, Math.max(0, filteredItems.length - 1))] || null)
-        : (selectedIndex >= -8 ? equipment[SLOT_ORDER[Math.abs(selectedIndex) - 1]] || null : null)
-      )
+      ? (filteredItems[Math.min(selectedIndex, Math.max(0, filteredItems.length - 1))] || null)
+      : (selectedIndex >= -8 ? equipment[SLOT_ORDER[Math.abs(selectedIndex) - 1]] || null : null)
+    )
     : hoveredItem;
 
   // 基礎ステータスの計算（全装備なし状態）
@@ -808,7 +808,7 @@ export const InventoryUI = memo(function InventoryUI({
     [EquipSlot.Amulet]: null,
   };
   const baseStats = computeStats(emptyEquip, permanentUpgrades);
-  
+
   // ====== 通用設定 & 計算ロジック (Step 210) ======
   const STAT_KEY_MAP: Record<string, string> = {
     [StatType.MeleeAttack]: 'meleeAttackPower',
@@ -829,8 +829,8 @@ export const InventoryUI = memo(function InventoryUI({
   };
 
   const affixOrder = [
-    'health', 'maxSp', 'meleeAttackPower', 'meleeAttackSpeed', 
-    'rangedAttackPower', 'rangedAttackSpeed', 'magicPower', 'critChance', 
+    'health', 'maxSp', 'meleeAttackPower', 'meleeAttackSpeed',
+    'rangedAttackPower', 'rangedAttackSpeed', 'magicPower', 'critChance',
     'defense', 'evasion', 'moveSpeed', 'pickupRange', 'hpRegen'
   ];
 
@@ -894,7 +894,7 @@ export const InventoryUI = memo(function InventoryUI({
         <div className="inv-title-bar">
           <h2 className="inv-title">📦 インベントリ</h2>
           <div className="inv-title-right">
-            <span className="inv-item-count">表示数: {filteredItems.length} / 所持数: {items.length} / 取得数: {totalItemsPickedUp}</span>
+            <span className="inv-item-count" style={{ fontFamily: 'sans-serif' }}>表示数: {filteredItems.length} / 所持数: {items.length} / 取得数: {totalItemsPickedUp}</span>
             <button className="inv-close-btn" onClick={onClose}>✕</button>
           </div>
         </div>
@@ -922,9 +922,9 @@ export const InventoryUI = memo(function InventoryUI({
             <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginTop: '8px', flex: 1, alignItems: 'flex-start' }}>
               {/* 左側：ステータスとアフィックス合計（広め） */}
               <div style={{ flex: '1.3', display: 'flex', flexDirection: 'column' }}>
-                
-                <div 
-                  className="inv-section-title" 
+
+                <div
+                  className="inv-section-title"
                   style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: (isGamepadActive && selectedIndex === -9) ? '0 0 0 2px #fff' : 'none', background: (isGamepadActive && selectedIndex === -9) ? 'rgba(255,255,255,0.1)' : 'transparent', borderRadius: '4px', padding: '4px' }}
                   onClick={() => setShowStats(!showStats)}
                   title="クリックで折りたたみ/展開"
@@ -933,9 +933,9 @@ export const InventoryUI = memo(function InventoryUI({
                     <span>⚙️ ステータス</span>
                     {showStats && (
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <span 
+                        <span
                           onClick={(e) => { e.stopPropagation(); setStatTab('total'); }}
-                          style={{ 
+                          style={{
                             padding: '2px 8px', fontSize: '10px', borderRadius: '4px',
                             background: statTab === 'total' ? 'rgba(120, 80, 255, 0.25)' : 'rgba(255,255,255,0.05)',
                             color: statTab === 'total' ? '#d0b0ff' : '#888',
@@ -943,9 +943,9 @@ export const InventoryUI = memo(function InventoryUI({
                             lineHeight: '1'
                           }}
                         >合計値</span>
-                        <span 
+                        <span
                           onClick={(e) => { e.stopPropagation(); setStatTab('base'); }}
-                          style={{ 
+                          style={{
                             padding: '2px 8px', fontSize: '10px', borderRadius: '4px',
                             background: statTab === 'base' ? 'rgba(120, 80, 255, 0.25)' : 'rgba(255,255,255,0.05)',
                             color: statTab === 'base' ? '#d0b0ff' : '#888',
@@ -963,23 +963,23 @@ export const InventoryUI = memo(function InventoryUI({
                     {[
                       { label: '最大HP', value: (statTab === 'total' ? playerStatsRef.current.health : getBaseStat('health')).toFixed(1) },
                       { label: '最大SP', value: (statTab === 'total' ? playerStatsRef.current.maxSp : getBaseStat('maxSp')).toFixed(1) },
-                      { 
-                        label: '近接攻撃力', 
+                      {
+                        label: '近接攻撃力',
                         value: (statTab === 'total' ? (playerStatsRef.current.meleeAttackPower || 0) : getBaseStat('meleeAttackPower')).toFixed(1),
-                        color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined 
+                        color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined
                       },
                       { label: '近接攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.meleeAttackInterval : 1.0)).toFixed(2)}/sec` },
-                      { 
-                        label: '遠隔攻撃力', 
+                      {
+                        label: '遠隔攻撃力',
                         value: (statTab === 'total' ? (playerStatsRef.current.rangedAttackPower || 0) : getBaseStat('rangedAttackPower')).toFixed(1),
-                        color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined 
+                        color: (statTab === 'total' && isShifukuActive) ? '#7fbfff' : undefined
                       },
                       { label: '遠隔攻撃回数', value: `${(1 / Math.max(0.01, statTab === 'total' ? playerStatsRef.current.rangedAttackInterval : 1.0)).toFixed(2)}/sec` },
                       { label: '魔力', value: (statTab === 'total' ? playerStatsRef.current.magicPower : getBaseStat('magicPower')).toFixed(1) },
-                      { 
-                        label: '会心率', 
-                        value: `${(statTab === 'total' ? (playerStatsRef.current.critChance + (isBuffActive ? 50.0 : 0)) : getBaseStat('critChance')).toFixed(1)}%`, 
-                        color: (statTab === 'total' && isBuffActive) ? '#bf7fff' : undefined 
+                      {
+                        label: '会心率',
+                        value: `${(statTab === 'total' ? (playerStatsRef.current.critChance + (isBuffActive ? 50.0 : 0)) : getBaseStat('critChance')).toFixed(1)}%`,
+                        color: (statTab === 'total' && isBuffActive) ? '#bf7fff' : undefined
                       },
                       { label: '防御力', value: (statTab === 'total' ? playerStatsRef.current.defense : getBaseStat('defense')).toFixed(1) },
                       { label: 'パリィ発生率', value: `${(statTab === 'total' ? computedStats.evasion : getBaseStat('evasion')).toFixed(1)}%` },
@@ -994,9 +994,9 @@ export const InventoryUI = memo(function InventoryUI({
                     ))}
                   </div>
                 )}
-                
-                <div 
-                  className="inv-section-title" 
+
+                <div
+                  className="inv-section-title"
                   style={{ marginTop: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: (isGamepadActive && selectedIndex === -10) ? '0 0 0 2px #fff' : 'none', background: (isGamepadActive && selectedIndex === -10) ? 'rgba(255,255,255,0.1)' : 'transparent', borderRadius: '4px', padding: '4px' }}
                   onClick={() => setShowAffix(!showAffix)}
                   title="クリックで折りたたみ/展開"
@@ -1005,9 +1005,9 @@ export const InventoryUI = memo(function InventoryUI({
                     <span>✨ アフィックス合計</span>
                     {showAffix && (
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <span 
+                        <span
                           onClick={(e) => { e.stopPropagation(); setAffixTab('percent'); }}
-                          style={{ 
+                          style={{
                             padding: '2px 8px', fontSize: '10px', borderRadius: '4px',
                             background: affixTab === 'percent' ? 'rgba(120, 80, 255, 0.25)' : 'rgba(255,255,255,0.05)',
                             color: affixTab === 'percent' ? '#d0b0ff' : '#888',
@@ -1015,9 +1015,9 @@ export const InventoryUI = memo(function InventoryUI({
                             lineHeight: '1'
                           }}
                         >％表記</span>
-                        <span 
+                        <span
                           onClick={(e) => { e.stopPropagation(); setAffixTab('value'); }}
-                          style={{ 
+                          style={{
                             padding: '2px 8px', fontSize: '10px', borderRadius: '4px',
                             background: affixTab === 'value' ? 'rgba(120, 80, 255, 0.25)' : 'rgba(255,255,255,0.05)',
                             color: affixTab === 'value' ? '#d0b0ff' : '#888',
@@ -1036,7 +1036,7 @@ export const InventoryUI = memo(function InventoryUI({
                       const statInfo = STAT_INFO[statType];
                       if (!statInfo) return null;
                       const values = summedStatsByType[statType] || { value: 0, percent: 0 };
-                      
+
                       let displayValue = 0;
                       let hasValue = false;
 
@@ -1070,7 +1070,7 @@ export const InventoryUI = memo(function InventoryUI({
                     })}
                   </div>
                 )}
-                
+
               </div>
 
               {/* 右側：装備時の変化プレビュー（狭め） */}
@@ -1090,14 +1090,14 @@ export const InventoryUI = memo(function InventoryUI({
             <div className="inv-section-title">🎒 所持品</div>
 
             {/* タブUI（改行禁止、1行に収める、文字中央寄せを強制） */}
-            <div className="inv-tabs" style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px' }}>
+            <div className="inv-tabs" style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px', fontFamily: 'GenEiLateMin, serif' }}>
               {showInventoryMainAll && (
-                <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={`inv-tab ${primaryTab === 'all' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('all')}>全て</button>
+                <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }} className={`inv-tab ${primaryTab === 'all' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('all')}>全て</button>
               )}
-              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={`inv-tab ${primaryTab === 'melee' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('melee')}>近接武器</button>
-              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={`inv-tab ${primaryTab === 'ranged' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('ranged')}>遠隔武器</button>
-              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={`inv-tab ${primaryTab === 'magic' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('magic')}>魔法武器</button>
-              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className={`inv-tab ${primaryTab === 'armor' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('armor')}>防具</button>
+              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }} className={`inv-tab ${primaryTab === 'melee' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('melee')}>近接武器</button>
+              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }} className={`inv-tab ${primaryTab === 'ranged' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('ranged')}>遠隔武器</button>
+              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }} className={`inv-tab ${primaryTab === 'magic' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('magic')}>魔法武器</button>
+              <button style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '13px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }} className={`inv-tab ${primaryTab === 'armor' ? 'active' : ''}`} onClick={() => onPrimaryTabChange('armor')}>防具</button>
             </div>
 
             {/* サブタブUI（改行禁止、縦幅とアイコンを拡大） */}
@@ -1106,32 +1106,32 @@ export const InventoryUI = memo(function InventoryUI({
                 {SUB_TABS[primaryTab as keyof typeof SUB_TABS]
                   .filter(tab => showInventorySubAll || tab.id !== 'all')
                   .map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => onSecondaryTabChange(tab.id)}
-                    title={tab.label}
-                    style={{
-                      flex: 1,
-                      background: secondaryTab === tab.id ? 'rgba(120, 80, 255, 0.4)' : 'rgba(0,0,0,0.4)',
-                      border: `1px solid ${secondaryTab === tab.id ? '#a78bfa' : '#444'}`,
-                      borderRadius: '4px', 
-                      padding: '6px 4px',
-                      cursor: 'pointer', color: '#fff', 
-                      fontSize: '18px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                  >
-                    {tab.id === 'all' ? <span style={{fontSize: '13px', fontWeight: 'bold'}}>ALL</span> : tab.emoji}
-                  </button>
-                ))}
+                    <button
+                      key={tab.id}
+                      onClick={() => onSecondaryTabChange(tab.id)}
+                      title={tab.label}
+                      style={{
+                        flex: 1,
+                        background: secondaryTab === tab.id ? 'rgba(120, 80, 255, 0.4)' : 'rgba(0,0,0,0.4)',
+                        border: `1px solid ${secondaryTab === tab.id ? '#a78bfa' : '#444'}`,
+                        borderRadius: '4px',
+                        padding: '6px 4px',
+                        cursor: 'pointer', color: '#fff',
+                        fontSize: '18px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                    >
+                      {tab.id === 'all' ? <span style={{ fontSize: '13px', fontWeight: 'bold' }}>ALL</span> : tab.emoji}
+                    </button>
+                  ))}
               </div>
             )}
 
             <div ref={scrollContainerRef} className="inv-items-scroll">
               {filteredItems.length === 0 ? (
-                <div className="inv-empty">
+                <div className="inv-empty" style={{ fontFamily: 'sans-serif' }}>
                   {primaryTab === 'all'
-                    ? 'アイテムがありません。敵を倒してドロップを拾いましょう！'
+                    ? '所持アイテムがありません。敵を倒して新たな装備を手に入れましょう。'
                     : '該当するアイテムがありません。'}
                 </div>
               ) : (
@@ -1167,12 +1167,12 @@ export const InventoryUI = memo(function InventoryUI({
               <div style={{ display: 'flex', gap: '0' }}>
                 <span className="gp-btn-side">LB</span><span className="gp-btn-side">RB</span>
               </div>
-              <span className="gp-label">大項目選択</span>
+              <span className="gp-label">メインタブ切り替え</span>
               <span style={{ margin: '0 8px', color: '#444' }}>|</span>
               <div style={{ display: 'flex', gap: '0' }}>
                 <span className="gp-btn-side">LT</span><span className="gp-btn-side">RT</span>
               </div>
-              <span className="gp-label">小項目選択</span>
+              <span className="gp-label">サブタブ切り替え</span>
               <span style={{ margin: '0 8px', color: '#444' }}>|</span>
               <span className="gp-btn gp-btn-a">A</span>
               <span className="gp-label">装備</span>
@@ -1191,12 +1191,12 @@ export const InventoryUI = memo(function InventoryUI({
               <div style={{ display: 'flex', gap: '0' }}>
                 <kbd className="gp-kbd">Q</kbd><kbd className="gp-kbd">E</kbd>
               </div>
-              <span className="gp-label">大項目選択</span>
+              <span className="gp-label">メインタブ切り替え</span>
               <span style={{ margin: '0 8px', color: '#444' }}>|</span>
               <div style={{ display: 'flex', gap: '0' }}>
                 <kbd className="gp-kbd">Z</kbd><kbd className="gp-kbd">C</kbd>
               </div>
-              <span className="gp-label">小項目選択</span>
+              <span className="gp-label">サブタブ切り替え</span>
               <span style={{ margin: '0 8px', color: '#444' }}>|</span>
               <kbd className="gp-kbd">L-Click</kbd>
               <span className="gp-label">装備</span>

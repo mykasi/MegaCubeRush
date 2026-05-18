@@ -32,7 +32,7 @@ export const UPGRADE_ITEMS: UpgradeDef[] = [
   { id: 'up_exp_req', name: '必要経験値減少', desc: 'レベルアップに必要な経験値が10%減少', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_reward_req', name: '必要キル数減少', desc: 'リワード獲得に必要なキル数が10%減少', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_drop_rate', name: 'アイテムドロップ', desc: 'アイテムドロップ確率10%アップ&ドロップ数10%増加(ボス)', maxLevel: 5, currency: 'energy', baseCost: 100000 },
-  { id: 'up_overclock', name: 'オーバーロード', desc: '敵の出現数増加(毎秒+1) ※ボスは除く', maxLevel: 5, currency: 'energy', baseCost: 100000 },
+  { id: 'up_overclock', name: 'オーバーロード', desc: '敵の出現数増加(+1体/秒) ※ボスは除く', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_enc_fire', name: '初期炎エンチャント', desc: 'ゲーム開始時から炎属性エンチャントを所持(Lv+1)', maxLevel: 2, currency: 'hyper', baseCost: 1 },
   { id: 'up_enc_ice', name: '初期氷エンチャント', desc: 'ゲーム開始時から氷属性エンチャントを所持(Lv+1)', maxLevel: 2, currency: 'hyper', baseCost: 1 },
   { id: 'up_enc_lightning', name: '初期雷エンチャント', desc: 'ゲーム開始時から雷属性エンチャントを所持(Lv+1)', maxLevel: 2, currency: 'hyper', baseCost: 1 },

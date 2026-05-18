@@ -838,16 +838,16 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
                         <span style={{ color: config.color, fontWeight: 'bold', fontSize: '14px', fontFamily: 'GenEiLateMin, serif', display: 'flex', alignItems: 'center' }}>
                           {config.nameJa}
                         </span>
-                        <span style={{ color: '#ccc', fontSize: '12px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: '#ccc', fontSize: '12px', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {dropLv}
                         </span>
-                        <span style={{ color: '#ccc', fontSize: '11px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: '#ccc', fontSize: '11px', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' }}>
                           {affixDisplay}
                         </span>
-                        <span style={{ color: '#00e5ff', fontSize: '13px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: '#00e5ff', fontSize: '13px', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {cubeBase} ×Lv
                         </span>
-                        <span style={{ color: '#aaa', fontSize: '14px', fontFamily: 'Consolas, monospace', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <span style={{ color: '#aaa', fontSize: '14px', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                           {dropPercent}%
                         </span>
                       </div>

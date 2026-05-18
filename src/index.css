@@ -818,6 +818,7 @@ body,
   border: 1px solid rgba(120, 80, 255, 0.2);
   border-radius: 4px;
   color: #888;
+  font-family: 'GenEiLateMin', serif;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -913,7 +914,6 @@ body,
 
 .compare-diff {
   font-weight: 700;
-  font-family: 'Consolas', monospace;
 }
 
 .compare-up .compare-diff {
@@ -1519,9 +1519,9 @@ body,
   50% { opacity: 1; transform: scale(1.05); }
 }
 
-/* --- 郢晢ｽｬ郢ｧ・｢郢晢ｽｪ郢晢ｿｽ縺・棔髢・ｽ騾具ｽｺ陷茨ｿｽ (Outglow) --- */
+/* --- 郢晢ｽｬ郢ｧ・｢郢晢ｽｪ郢晢ｽｽ縺・棔髢€・ｽ騾具ｽｺ陷茨ｿｽ (Outglow) --- */
 
-/* 闕ｳ雍具ｽｽ髦ｪﾎ樒ｹｧ・｢郢晢ｽｪ郢晢ｿｽ縺・ｿｽ螟先瀦邵ｺ荵昶・隴丞叙・ｻ・ｽ笘・ｹｧ蜿･・､髢・ｽ騾具ｽｺ陷茨ｿｽ (Soft Pulse) */
+/* 闕ｳ雍具ｽｽ髦ｪﾎ樒ｹｧ・｢郢晢ｽｪ郢晢ｽｽ縺・ｿｽ螟先瀦邵ｺ荵昶・隴丞叙・ｻ・ｽ笘・ｹｧ蜿･・､髢€・ｽ騾具ｽｺ陷茨ｿｽ (Soft Pulse) */
 .mythic-glow {
   animation: mythicSoftPulse 3s infinite alternate ease-in-out;
 }
@@ -1583,6 +1583,7 @@ body,
   display: flex;
   flex-direction: column;
   gap: 30px;
+  font-family: 'GenEiLateMin', serif;
   animation: slideUp 0.3s ease;
 }
 
@@ -1638,7 +1639,7 @@ body,
 
 .settings-value {
   color: #00e5ff;
-  font-family: monospace;
+  font-family: sans-serif;
   font-size: 1.2rem;
   min-width: 50px;
   text-align: right;
