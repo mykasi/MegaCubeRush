@@ -2480,7 +2480,40 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <div style={{ marginTop: '32px', color: '#888', fontSize: '14px', fontFamily: 'GenEiLateMin, serif', display: 'flex', justifyContent: 'center' }}>
+
+              {/* メニュー説明文 (キーガイドの少し上) */}
+              <div style={{
+                marginTop: '24px',
+                minHeight: '24px',
+                color: '#aaa',
+                fontSize: '14px',
+                fontFamily: 'GenEiLateMin, serif',
+                textAlign: 'center',
+                textShadow: '0 0 6px rgba(255,255,255,0.2)',
+                letterSpacing: '1px',
+                width: '90%',
+                maxWidth: '720px',
+                lineHeight: '1.5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {(() => {
+                  if (!isModeSelectOpen) {
+                    if (titleMenuIndex === 0) return 'レベル1・所持アイテム無しでスタート。難易度選択へ移動します。';
+                    if (titleMenuIndex === 1) return '獲得したキューブを消費してプレイヤーを恒久的に強化出来ます。';
+                    if (titleMenuIndex === 2) return '操作方法や各種システム、武器の特徴などを確認出来ます。';
+                    if (titleMenuIndex === 3) return '音量やインベントリ、プレイヤースキンなどの設定を変更出来ます。';
+                  } else {
+                    if (titleMenuIndex === 0) return '練習用の10分モード。インベントリ画面では時間が停止しますが、エナジーキューブ獲得量が半減します。';
+                    if (titleMenuIndex === 1) return '標準難易度の15分モード。インベントリ画面でも時間が経過しますが、ハイパーキューブが獲得出来ます。';
+                    if (titleMenuIndex === 2) return 'メインメニューへ戻ります。';
+                  }
+                  return '';
+                })()}
+              </div>
+
+              <div style={{ marginTop: '24px', color: '#888', fontSize: '14px', fontFamily: 'GenEiLateMin, serif', display: 'flex', justifyContent: 'center' }}>
                 {activeDevice === 'keyboard' ? (
                   <div className="gp-btn-container" style={{ justifyContent: 'center', fontFamily: 'GenEiLateMin, serif' }}>
                     <div style={{ display: 'flex', gap: '0' }}>
