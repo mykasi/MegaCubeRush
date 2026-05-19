@@ -3736,7 +3736,7 @@ export default function App() {
 
       {/* バージョン表示 */}
       <div style={{ position: 'fixed', bottom: '10px', left: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', pointerEvents: 'none', zIndex: 9999, fontFamily: 'Consolas, monospace' }}>
-        Ver.1.2.0
+        Ver.1.3.0
       </div>
     </>
   );

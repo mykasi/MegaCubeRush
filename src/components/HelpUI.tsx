@@ -47,7 +47,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [controlSubTab, setControlSubTab] = useState<'game' | 'menu'>('game');
   const [elementSubTab, setElementSubTab] = useState<'enchant' | 'status'>('enchant');
-  const [systemSubTab, setSystemSubTab] = useState<'action' | 'core' | 'battle' | 'stats' | 'hud'>('action');
+  const [systemSubTab, setSystemSubTab] = useState<'action' | 'core' | 'battle' | 'stats' | 'hud' | 'reward'>('action');
   const [itemSubTab, setItemSubTab] = useState<'drops' | 'resources' | 'rarity' | 'affixes' | 'equip'>('drops');
 
   const switchTab = useCallback((dir: number) => {
@@ -67,7 +67,7 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
       setElementSubTab(prev => (prev === 'enchant' ? 'status' : 'enchant'));
     } else if (activeTab === 'systems') {
       setSystemSubTab(prev => {
-        const subTabs: Array<'action' | 'core' | 'battle' | 'stats' | 'hud'> = ['action', 'core', 'battle', 'stats', 'hud'];
+        const subTabs: Array<'action' | 'core' | 'battle' | 'stats' | 'hud' | 'reward'> = ['action', 'core', 'battle', 'stats', 'hud', 'reward'];
         const currentIdx = subTabs.indexOf(prev);
         const nextIdx = (currentIdx + dir + subTabs.length) % subTabs.length;
         return subTabs[nextIdx];
@@ -376,6 +376,19 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
         >
           📱 HUD構成
         </button>
+        <button
+          onClick={() => { setSystemSubTab('reward'); playSound('ui_tab_large'); }}
+          style={{
+            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+            border: `2px solid ${systemSubTab === 'reward' ? '#39ff14' : '#444'}`,
+            background: systemSubTab === 'reward' ? 'rgba(57, 255, 20, 0.2)' : 'rgba(0,0,0,0.3)',
+            color: systemSubTab === 'reward' ? '#39ff14' : '#666',
+            transition: 'all 0.2s',
+            fontFamily: 'GenEiLateMin, serif'
+          }}
+        >
+          🎁 リワード
+        </button>
       </div>
 
       {systemSubTab === 'action' && (
@@ -600,6 +613,65 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+      )}
+
+      {systemSubTab === 'reward' && (
+        <section className="help-content-fade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {/* 獲得条件 */}
+            <div className="help-system-item" style={{ borderLeftColor: '#39ff14' }}>
+              <div className="help-system-title"><span style={{ color: '#39ff14' }}>🎁 リワード獲得条件</span></div>
+              <p className="help-system-desc">
+                ・概要: 敵の累計撃破数（KILLS）が目標に達すると、ゲームが一時停止してリワード選択画面が表示されます。<br />
+                ・初回目標: 最初のリワードは<strong style={{ color: '#ffeb3b' }}>20撃破</strong>で獲得できます。<br />
+                ・目標の増加: リワードを獲得するたびに、次の目標撃破数は累乗的に増加していきます。<br />
+                ・メタ強化: 「必要キル数減少」の永続強化により、1レベルにつき目標数を<strong style={{ color: '#00e5ff' }}>10%減少</strong>させることができます（最大5レベルで50%減少）。
+              </p>
+            </div>
+
+            {/* 抽選ルール */}
+            <div className="help-system-item" style={{ borderLeftColor: '#bf7fff' }}>
+              <div className="help-system-title"><span style={{ color: '#bf7fff' }}>🃏 抽選ルール</span></div>
+              <p className="help-system-desc">
+                ・提示枚数: 常にランダムな<strong style={{ color: '#ffeb3b' }}>3択</strong>のカードが提示されます。<br />
+                ・アクティブ枠の優先保証: 魔法（ライトニングボルト・フレイムバースト・フロストノヴァ）またはエンチャント（炎・氷・雷）のアクティブスキルが<strong style={{ color: '#00e5ff' }}>1枠優先して抽選</strong>されます。残りの2枠はパッシブ（ステータス強化）リワードから重複なしで補充されます。<br />
+                ・除外ルール: 既に最大レベルに達したリワード、およびそのゲーム中にバニッシュされたリワードは抽選プールから自動的に除外されます。
+              </p>
+            </div>
+
+            {/* リロール＆バニッシュ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="help-system-item" style={{ borderLeftColor: '#00e5ff' }}>
+                <div className="help-system-title"><span style={{ color: '#00e5ff' }}>🔄 リロール</span></div>
+                <p className="help-system-desc">
+                  ・概要: 提示された3枚のリワードが気に入らない場合、すべてシャッフルしてリセットする機能です。<br />
+                  ・選択時の挙動: リロール回数を1消費し、現在の3択を<strong style={{ color: '#ff5252' }}>すべて破棄</strong>し、<strong style={{ color: '#00e5ff' }}>再抽選</strong>します。<br />
+                  ・回数: 1ゲームあたりの使用回数は、メタプログレッション「リロール」のレベルと同数です（最大10回）。
+                </p>
+              </div>
+              <div className="help-system-item" style={{ borderLeftColor: '#ff5252' }}>
+                <div className="help-system-title"><span style={{ color: '#ff5252' }}>🚫 バニッシュ</span></div>
+                <p className="help-system-desc">
+                  ・概要: 不要なリワードをそのゲームの抽選プールから永続的に追放し、二度と出現させない機能です。<br />
+                  ・選択時の挙動: バニッシュ回数を1消費し、選択したリワードを現在のゲームから<strong style={{ color: '#ff5252' }}>永久に追放</strong>し、<strong style={{ color: '#00e5ff' }}>再抽選</strong>します。<br />
+                  ・回数: 1ゲームあたりの使用回数は、メタプログレッション「バニッシュ」のレベルと同数です（最大5回）。
+                </p>
+              </div>
+            </div>
+
+            {/* 安全設計 */}
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
+              <h4 style={{ color: '#ffeb3b', margin: '0 0 12px 0', fontFamily: 'GenEiLateMin, serif' }}>⚠️ 誤操作防止ロック</h4>
+              <p style={{ fontSize: '14px', color: '#ccc', margin: 0, lineHeight: '1.6' }}>
+                リワード画面が開いた直後は、どのカードも選択されていない<strong style={{ color: '#ffeb3b' }}>未選択状態</strong>から開始されます。
+                キーボードの矢印キーやゲームパッドの十字キー等で明示的にカードを選択するまで、決定操作（Space / Aボタン等）は受け付けません。<br />
+                これにより、ゲームプレイ中の連打が意図しないリワード取得に繋がることを防止しています。
+              </p>
+            </div>
+
           </div>
         </section>
       )}
