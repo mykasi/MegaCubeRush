@@ -67,6 +67,7 @@ import { UpdateUI } from './components/UpdateUI';
 import { resetBossHPBus } from './game/bossHPBus';
 import { SettingsUI } from './components/SettingsUI';
 import HelpUI from './components/HelpUI';
+import { ChangelogUI } from './components/ChangelogUI';
 
 /** セーブデータから永続強化を読み込んで PermanentUpgrades 型に変換する */
 const loadUpgradesFromSave = (): PermanentUpgrades => {
@@ -830,6 +831,7 @@ export default function App() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [isTitleScreen, setIsTitleScreen] = useState(true); // 【追加】タイトル画面状態
   const [isUpdateScreen, setIsUpdateScreen] = useState(false); // 【追加】UPDATE画面状態
+  const [isChangelogOpen, setIsChangelogOpen] = useState(false); // 【追加】更新履歴画面状態
   const [activeDevice, setActiveDevice] = useState<'keyboard' | 'gamepad'>('keyboard'); // 【追加】アクティブデバイス状態
   const [titleMenuIndex, setTitleMenuIndex] = useState(0); // 【追加】タイトル画面のメニュー選択
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // 【追加】設定画面状態
@@ -1699,6 +1701,9 @@ export default function App() {
   const lastAPressedRef = useRef(false);
   const lastBPressedRef = useRef(false);
   const lastStartPressedRef = useRef(false);
+  const lastSelectPressedRef = useRef(false);
+  const lastLTPressedRef = useRef(false);
+  const lastRTPressedRef = useRef(false);
 
   useEffect(() => {
     if (!isTitleScreen) return;
@@ -1707,21 +1712,25 @@ export default function App() {
     const REPEAT_INTERVAL = 80; // 連続移動の速度
 
     const checkGamepad = () => {
-      if (isSettingsOpen || isUpdateScreen || isHelpOpen) {
+      if (isSettingsOpen || isUpdateScreen || isHelpOpen || isChangelogOpen) {
         const { mainDevice } = pollTitleGamepad();
         if (mainDevice) {
           // 設定画面が開いている間も、ボタンの状態だけは更新し続けて「押しっぱなし」を検知できるようにする
           lastAPressedRef.current = mainDevice.buttons[0] > 0.5;
           lastBPressedRef.current = mainDevice.buttons[1] > 0.5;
           lastStartPressedRef.current = mainDevice.buttons[9] > 0.5;
+          lastSelectPressedRef.current = mainDevice.buttons[8] > 0.5;
+          lastLTPressedRef.current = mainDevice.buttons[6] > 0.5;
+          lastRTPressedRef.current = mainDevice.buttons[7] > 0.5;
           lastUpRef.current = mainDevice.buttons[12] > 0.5;
           lastDownRef.current = mainDevice.buttons[13] > 0.5;
 
-          if (lastBPressedRef.current && (isSettingsOpen || isHelpOpen)) {
+          if (lastBPressedRef.current && (isSettingsOpen || isHelpOpen || isChangelogOpen)) {
             const now = Date.now();
             if (now - titleEnterTimeRef.current > 500) {
               if (isHelpOpen) setIsHelpOpen(false);
               else if (isSettingsOpen) setIsSettingsOpen(false);
+              else if (isChangelogOpen) setIsChangelogOpen(false);
               playSound('ui_cancel');
               titleEnterTimeRef.current = now; // 暴発防止
             }
@@ -1736,6 +1745,9 @@ export default function App() {
         const aPressed = mainDevice.buttons[0] > 0.5; // Aボタン
         const bPressed = mainDevice.buttons[1] > 0.5; // Bボタン
         const startPressed = mainDevice.buttons[9] > 0.5; // Startボタン
+        const selectPressed = mainDevice.buttons[8] > 0.5; // SELECT
+        const ltPressed = mainDevice.buttons[6] > 0.5; // LT
+        const rtPressed = mainDevice.buttons[7] > 0.5; // RT (MASTER VOLUME toggle)
 
         // 十字キー (D-pad)
         const up = mainDevice.buttons[12] > 0.5;
@@ -1794,10 +1806,24 @@ export default function App() {
             setIsModeSelectOpen(false);
             setTitleMenuIndex(0);
           }
+          // LT または SELECT が押されたら更新履歴を開く
+          if ((selectPressed && !lastSelectPressedRef.current) || (ltPressed && !lastLTPressedRef.current)) {
+            if (!isModeSelectOpen) {
+              playSound('ui_select');
+              setIsChangelogOpen(true);
+            }
+          }
+          // RT が押されたら音量（マスターボリューム）を切り替え
+          if (rtPressed && !lastRTPressedRef.current) {
+            handleToggleMasterMute();
+          }
         }
         lastAPressedRef.current = aPressed;
         lastBPressedRef.current = bPressed;
         lastStartPressedRef.current = startPressed;
+        lastSelectPressedRef.current = selectPressed;
+        lastLTPressedRef.current = ltPressed;
+        lastRTPressedRef.current = rtPressed;
         lastUpRef.current = up;
         lastDownRef.current = down;
       }
@@ -1805,7 +1831,8 @@ export default function App() {
     };
     frameId = requestAnimationFrame(checkGamepad);
     return () => cancelAnimationFrame(frameId);
-  }, [isTitleScreen, isUpdateScreen, isSettingsOpen, isHelpOpen, isModeSelectOpen, handleStartGame, pollTitleGamepad]);
+  }, [isTitleScreen, isUpdateScreen, isSettingsOpen, isHelpOpen, isChangelogOpen, isModeSelectOpen, handleStartGame, pollTitleGamepad, handleToggleMasterMute]);
+
 
   const handleToggleInventory = useCallback(() => {
     if (isGameOver) return;
@@ -1959,7 +1986,18 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 【追加】タイトル画面なら、任意のキー（EnterやSpace等）でゲーム開始
-      if (isTitleScreen && !isUpdateScreen && !isSettingsOpen && !isHelpOpen) {
+      if (isTitleScreen && !isUpdateScreen && !isSettingsOpen && !isHelpOpen && !isChangelogOpen) {
+        if (e.key === 'u' || e.key === 'U') {
+          if (!isModeSelectOpen) {
+            playSound('ui_select');
+            setIsChangelogOpen(true);
+            return;
+          }
+        }
+        if (e.key === 'm' || e.key === 'M') {
+          handleToggleMasterMute();
+          return;
+        }
         if (e.key === 'ArrowUp') { setTitleMenuIndex((prev) => (prev - 1 + 4) % 4); playSound('ui_move'); return; }
         if (e.key === 'ArrowDown') { setTitleMenuIndex((prev) => (prev + 1) % 4); playSound('ui_move'); return; }
         if (e.key === 'Enter' || e.key === ' ') {
@@ -2175,7 +2213,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isInventoryOpen, isPaused, isGameOver, showRewardScreen, selectedRewardIndex, currentRewards, handleRestart, handleToggleInventory, handleTogglePause, handleSortByRarity, handleSelectReward, acquiredRewards, isTitleScreen, isUpdateScreen, titleMenuIndex, handleStartGame, isHelpOpen, selectedPauseIndex, selectedIndex]);
+  }, [isInventoryOpen, isPaused, isGameOver, showRewardScreen, selectedRewardIndex, currentRewards, handleRestart, handleToggleInventory, handleTogglePause, handleSortByRarity, handleSelectReward, acquiredRewards, isTitleScreen, isUpdateScreen, titleMenuIndex, handleStartGame, isHelpOpen, selectedPauseIndex, selectedIndex, handleToggleMasterMute]);
 
   const handleSwitchEnchant = useCallback((enchant: 'fire' | 'ice' | 'lightning' | 'none') => {
     if (isGameOver || isPaused || isInventoryOpen || showRewardScreen) return;
@@ -2349,6 +2387,10 @@ export default function App() {
             <UpdateUI isGamepadActive={activeDevice !== 'keyboard'} onClose={() => setIsUpdateScreen(false)} />
           )}
 
+          {isChangelogOpen && (
+            <ChangelogUI isGamepad={activeDevice !== 'keyboard'} isOpen={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
+          )}
+
           <style>
             {`
               @keyframes menuFadeIn {
@@ -2361,9 +2403,47 @@ export default function App() {
             `}
           </style>
 
-          {/* メインタイトルUIレイヤー */}
-          {!isUpdateScreen && (
+          {!isUpdateScreen && !isChangelogOpen && (
             <>
+              {/* タイトル画面左下のUPDATEボタン */}
+              <div style={{
+                position: 'absolute', bottom: '32px', left: '10px', zIndex: 300,
+                display: 'flex', alignItems: 'center',
+                fontFamily: 'sans-serif', fontSize: '14px',
+                animation: 'changelogFadeIn 0.3s ease-out'
+              }}>
+                <button
+                  onClick={() => { playSound('ui_select'); setIsChangelogOpen(true); }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = '#00e5ff';
+                    e.currentTarget.style.color = '#00e5ff';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.5)';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '6px',
+                    padding: '6px 16px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+                    fontWeight: 'bold',
+                    letterSpacing: '2px',
+                    transition: 'all 0.2s ease',
+                    outline: 'none'
+                  }}
+                >
+                  UPDATE
+                </button>
+              </div>
               {/* マスター音量トグルボタン (タイトル画面右上) */}
               <div
                 onClick={handleToggleMasterMute}
@@ -2525,6 +2605,22 @@ export default function App() {
                     <span style={{ margin: '0 8px', color: '#444' }}>|</span>
                     <kbd className="gp-kbd">Enter</kbd>
                     <span className="gp-label">決定</span>
+                    <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                    <kbd className="gp-kbd">M</kbd>
+                    <span className="gp-label">音量切替</span>
+                    {!isModeSelectOpen ? (
+                      <>
+                        <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                        <kbd className="gp-kbd">U</kbd>
+                        <span className="gp-label">更新履歴</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ margin: '0 8px', color: '#444' }}>|</span>
+                        <kbd className="gp-kbd">Esc</kbd>
+                        <span className="gp-label">戻る</span>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="gp-btn-container" style={{ justifyContent: 'center' }}>
@@ -2533,6 +2629,23 @@ export default function App() {
                     <span style={{ margin: '0 8px', color: '#555' }}>|</span>
                     <span className="gp-btn gp-btn-a">A</span>
                     <span className="gp-label">決定</span>
+                    <span style={{ margin: '0 8px', color: '#555' }}>|</span>
+                    <span className="gp-btn gp-btn-side">RT</span>
+                    <span className="gp-label">音量切替</span>
+                    {!isModeSelectOpen ? (
+                      <>
+                        <span style={{ margin: '0 8px', color: '#555' }}>|</span>
+                        <span className="gp-btn gp-btn-side" style={{ minWidth: '40px' }}>SELECT</span>
+                        <span className="gp-btn gp-btn-side">LT</span>
+                        <span className="gp-label">更新履歴</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ margin: '0 8px', color: '#555' }}>|</span>
+                        <span className="gp-btn gp-btn-b">B</span>
+                        <span className="gp-label">戻る</span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -3736,7 +3849,7 @@ export default function App() {
 
       {/* バージョン表示 */}
       <div style={{ position: 'fixed', bottom: '10px', left: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', pointerEvents: 'none', zIndex: 9999, fontFamily: 'Consolas, monospace' }}>
-        Ver.1.3.0
+        Ver.1.4.0
       </div>
     </>
   );
