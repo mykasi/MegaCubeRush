@@ -197,10 +197,10 @@ export const BASE_ITEMS: readonly BaseItemDefinition[] = [
     attackType: 'ranged',
     baseStats: [{ stat: StatType.RangedAttack, value: 1 }],
     attackInterval: 0.4, // 追加: 基本的な連射速度
-    projectileSpeed: 20.0,
+    projectileSpeed: 25.0,
     projectileCount: 1,
     pierceCount: 2,
-    lifespan: 1.0,
+    lifespan: 0.5,
     shootSound: 'shoot_handgun',
     hitSound: 'hit_handgun',
     moveSpeedMultiplier: 0.90,
@@ -213,11 +213,11 @@ export const BASE_ITEMS: readonly BaseItemDefinition[] = [
     attackType: 'ranged',
     baseStats: [{ stat: StatType.RangedAttack, value: 1 }],
     attackInterval: 0.2, // 超高速連射
-    projectileSpeed: 14.0,
+    projectileSpeed: 20.0,
     projectileCount: 1,
     spreadAngle: 0.1, // 少しバラける
     pierceCount: 1,
-    lifespan: 0.7,
+    lifespan: 0.35,
     shootSound: 'shoot_smg',
     hitSound: 'hit_smg',
     moveSpeedMultiplier: 0.80,
@@ -230,10 +230,10 @@ export const BASE_ITEMS: readonly BaseItemDefinition[] = [
     attackType: 'ranged',
     baseStats: [{ stat: StatType.RangedAttack, value: 1 }],
     attackInterval: 1.0, // 射撃間隔を短縮
-    projectileSpeed: 40.0,
+    projectileSpeed: 50.0,
     projectileCount: 1,
     pierceCount: 5, // 最大ヒット数を減少
-    lifespan: 1.0,
+    lifespan: 0.8,
     shootSound: 'shoot_rifle',
     hitSound: 'hit_rifle',
     moveSpeedMultiplier: 0.75,
@@ -246,11 +246,11 @@ export const BASE_ITEMS: readonly BaseItemDefinition[] = [
     attackType: 'ranged',
     baseStats: [{ stat: StatType.RangedAttack, value: 1 }],
     attackInterval: 1.2,
-    projectileSpeed: 14.0,
+    projectileSpeed: 16.0,
     projectileCount: 5, // 3発から5発へ増量
     spreadAngle: 0.35,
     pierceCount: 1,
-    lifespan: 0.5,
+    lifespan: 0.4,
     shootSound: 'shoot_shotgun',
     hitSound: 'hit_shotgun',
     moveSpeedMultiplier: 0.80,

@@ -682,6 +682,8 @@ const HelpUI: React.FC<HelpUIProps> = ({ isOpen, onClose, isGamepad }) => {
     <div className="help-content-fade">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         {[
+          { label: 'プレイヤーLv', desc: '現在のプレイヤーのレベル。敵を倒して経験値（EXP）を得ることで上昇します。レベルが上がるとより高レベルの装備がドロップするようになりますが、自身のレベルを超える装備は装着できません。' },
+          { label: 'アイテムLv', desc: '装備品ごとに設定された強さの基準。レベルが高いほどその装備の基礎性能（攻撃力や最大HPなどのステータス補正値）が強力になります。自身のプレイヤーレベル以下の装備のみ装着可能です。' },
           { label: '最大HP', desc: 'プレイヤーの生命力。0になるとゲームオーバーです。' },
           { label: '最大SP', desc: '回避やバリア（防御）、属性エンチャント、メガクラッシュに使用するエネルギーの最大値。' },
           { label: '近接攻撃力', desc: '近接武器による直接攻撃の威力。' },

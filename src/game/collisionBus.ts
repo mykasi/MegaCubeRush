@@ -154,7 +154,11 @@ export function resetAllEnemies() {
 /** 非アクティブなスロットのインデックスを探す（なければ-1） */
 export function findInactiveSlot(): number {
   for (let i = 0; i < poolSize; i++) {
-    if (!enemyAlive[i]) return i;
+    if (!enemyAlive[i]) {
+      // クイーン(4)、キングコア(5)、シールド(6)などのボスパーツだったスロットは通常雑魚スポーンで再利用しない
+      if (enemyType[i] >= 4) continue;
+      return i;
+    }
   }
   return -1;
 }

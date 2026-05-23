@@ -42,7 +42,7 @@ import { BossKing } from './components/BossKing';
 import { BossUI } from './components/BossUI';
 import { onPickup, resetDrops, pullAllDrops } from './game/dropBus';
 import { resetGems, pullAllGems } from './game/expGemBus';
-import { setGlobalGameTime } from './game/collisionBus';
+import { setGlobalGameTime, getGlobalGameTime } from './game/collisionBus';
 import type { DroppedItem } from './game/dropBus';
 import type { GeneratedItem } from './game/items/itemTypes';
 import { EquipSlot, Rarity, StatType } from './game/items/itemTypes';
@@ -1043,12 +1043,9 @@ export default function App() {
 
   useEffect(() => {
     if (isPaused || isGameOver || isSpawning) return;
-    let lastTime = performance.now();
     let frameId: number;
     const update = () => {
-      const now = performance.now();
-      playTimeRef.current += (now - lastTime) / 1000;
-      lastTime = now;
+      playTimeRef.current = getGlobalGameTime();
       if (timerTextRef.current) {
         const pt = playTimeRef.current;
         const mins = Math.floor(pt / 60).toString().padStart(2, '0');
@@ -1329,8 +1326,9 @@ export default function App() {
   }, []);
 
   const handleEquip = useCallback((item: GeneratedItem) => {
+    const reliefLvl = getSaveData().upgradeLevels['up_equip_limit_relief'] || 0;
     // レベル制限
-    if (item.itemLevel > getLevel()) {
+    if (item.itemLevel > getLevel() + reliefLvl) {
       return;
     }
 
@@ -1389,7 +1387,8 @@ export default function App() {
       let newInventory = [...inventoryRef.current];
 
       // 2. 未装備枠があり、かつ現在のレベルで装備可能な場合のみ自動装備
-      if (!currentEquip[slot] && item.itemLevel <= getLevel()) {
+      const reliefLvl = getSaveData().upgradeLevels['up_equip_limit_relief'] || 0;
+      if (!currentEquip[slot] && item.itemLevel <= getLevel() + reliefLvl) {
         const newEquip: EquipmentState = { ...currentEquip, [slot]: item };
         setEquipment(newEquip);
         equipmentRef.current = newEquip;
@@ -1448,7 +1447,8 @@ export default function App() {
   }, [syncStats]);
 
   const handleSortByRarity = useCallback(() => {
-    const currentLevel = getLevel();
+    const reliefLvl = getSaveData().upgradeLevels['up_equip_limit_relief'] || 0;
+    const currentLevel = getLevel() + reliefLvl;
     setInventory((prev) => [...prev].sort((a, b) => {
       // 1. 装備可能なもの（レベル条件を満たしているもの）を優先
       const aEquippable = a.itemLevel <= currentLevel ? 1 : 0;
@@ -3849,7 +3849,7 @@ export default function App() {
 
       {/* バージョン表示 */}
       <div style={{ position: 'fixed', bottom: '10px', left: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', pointerEvents: 'none', zIndex: 9999, fontFamily: 'Consolas, monospace' }}>
-        Ver.1.4.0
+        Ver.1.5.0
       </div>
     </>
   );

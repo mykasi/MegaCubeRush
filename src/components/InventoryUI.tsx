@@ -6,6 +6,7 @@ import { getItemDisplayName } from '../game/items/itemGenerator';
 import type { PlayerStats, EquipmentState } from '../game/playerStats';
 import { computeStats, dodgeBuffTimer, shifukuBuffAmount, playerStatsRef } from '../game/playerStats';
 import { getLevel } from '../game/playerLevel';
+import { getSaveData } from '../game/saveData';
 
 // UIの表示状態をコンポーネントの破棄後も記憶しておくためのグローバル変数
 const globalInvState = {
@@ -246,7 +247,7 @@ function ItemCard({
   const config = RARITY_CONFIG[item.rarity];
   const slot = getItemIcon(item.baseItem);
 
-  const currentLevel = getLevel();
+  const currentLevel = getLevel() + (getSaveData().upgradeLevels['up_equip_limit_relief'] || 0);
   const isLevelDisabled = currentLevel < item.itemLevel;
 
   return (
@@ -300,7 +301,7 @@ function ItemDetailPanel({ item }: { item: GeneratedItem | null }) {
   const displayName = getItemDisplayName(item).replace(/[〜～~]/g, '');
   const slot = getItemIcon(item.baseItem);
 
-  const currentLevel = getLevel();
+  const currentLevel = getLevel() + (getSaveData().upgradeLevels['up_equip_limit_relief'] || 0);
   const isLevelDisabled = currentLevel < (item.itemLevel || 1);
 
   return (
@@ -761,7 +762,8 @@ export const InventoryUI = memo(function InventoryUI({
       return true;
     });
 
-    const currentLevel = getLevel();
+    const reliefLvl = getSaveData().upgradeLevels['up_equip_limit_relief'] || 0;
+    const currentLevel = getLevel() + reliefLvl;
     result.sort((a, b) => {
       const aEquip = a.itemLevel <= currentLevel ? 1 : 0;
       const bEquip = b.itemLevel <= currentLevel ? 1 : 0;

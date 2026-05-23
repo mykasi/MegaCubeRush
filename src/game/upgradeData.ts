@@ -32,6 +32,7 @@ export const UPGRADE_ITEMS: UpgradeDef[] = [
   { id: 'up_exp_req', name: '必要経験値減少', desc: 'レベルアップに必要な経験値が10%減少', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_reward_req', name: '必要キル数減少', desc: 'リワード獲得に必要なキル数が10%減少', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_drop_rate', name: 'アイテムドロップ', desc: 'アイテムドロップ確率10%アップ&ドロップ数10%増加(ボス)', maxLevel: 5, currency: 'energy', baseCost: 100000 },
+  { id: 'up_equip_limit_relief', name: '装備レベル制限緩和', desc: '自身のレベルより高い装備を装着可能になる (レベル制限を +1 緩和)', maxLevel: 8, currency: 'energy', baseCost: 400000 },
   { id: 'up_overclock', name: 'オーバーロード', desc: '敵の出現数増加(+1体/秒) ※ボスは除く', maxLevel: 5, currency: 'energy', baseCost: 100000 },
   { id: 'up_enc_fire', name: '炎属性エンチャント', desc: 'ゲーム開始時から炎属性エンチャントを所持(Lv+1)', maxLevel: 2, currency: 'hyper', baseCost: 1 },
   { id: 'up_enc_ice', name: '氷属性エンチャント', desc: 'ゲーム開始時から氷属性エンチャントを所持(Lv+1)', maxLevel: 2, currency: 'hyper', baseCost: 1 },
@@ -43,6 +44,10 @@ export const UPGRADE_ITEMS: UpgradeDef[] = [
 
 export const getUpgradeCostInfo = (id: string, currentLevel: number): { cost: number; currency: 'energy' | 'hyper' } => {
   const nextLv = currentLevel + 1;
+
+  if (id === 'up_equip_limit_relief') {
+    return { cost: 400000, currency: 'energy' };
+  }
 
   if (id === 'up_hp' || id === 'up_sp' || id === 'up_melee_spd' || id === 'up_ranged_spd' || id === 'up_crit' || id === 'up_eva' || id === 'up_regen' || id === 'up_invincible' || id === 'up_heal' || id === 'up_vanish') {
     if (nextLv === 1) return { cost: 40000, currency: 'energy' };
